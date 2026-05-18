@@ -1,0 +1,371 @@
+<template>
+  <div class="min-h-screen bg-gray-100 flex font-sans">
+    <aside class="w-64 bg-slate-800 text-white flex flex-col shadow-xl fixed h-full z-10">
+      <div class="p-6 text-2xl font-bold border-b border-slate-700 tracking-tight text-blue-400 uppercase">
+        RRHH Innova
+      </div>
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <NuxtLink to="/" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all">
+          <span>🏠</span> Dashboard
+        </NuxtLink>
+        <NuxtLink to="/empleados" class="flex items-center gap-3 p-3 rounded-xl bg-blue-600 shadow-lg">
+          <span>👥</span> Empleados
+        </NuxtLink>
+      </nav>
+    </aside>
+
+    <main class="flex-1 ml-64 p-8">
+      <header class="mb-10 flex flex-col gap-5 bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center w-full">
+          <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight uppercase">Lista de Empleados</h1>
+            <p class="text-slate-500 mt-1 font-medium italic">Personal registrado en la plataforma.</p>
+          </div>
+          <div class="flex items-center gap-6">
+            <button @click="abrirModalNuevo" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs hover:bg-green-700 transition-all shadow-lg shadow-green-200">
+              + Nuevo Empleado
+            </button>
+            <div class="flex items-center gap-3 pl-6 border-l border-slate-200">
+              <div v-if="fotoUsuario" class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-slate-100">
+                <img :src="`http://localhost:3000${fotoUsuario}`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-lg ring-2 ring-slate-100 uppercase">
+                {{ nombreUsuario ? nombreUsuario.charAt(0) : 'U' }}
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Usuario Activo</span>
+                <span class="text-base font-black text-slate-900 leading-tight">{{ nombreUsuario || 'Cargando...' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4 items-center w-full">
+          <div class="flex-1 min-w-[250px]">
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Buscar por nombre, apellido o identidad..." 
+              class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:italic"
+            >
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado:</span>
+            <select v-model="statusFilter" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm font-medium text-slate-700 transition-colors cursor-pointer">
+              <option value="todos">Todos</option>
+              <option value="activos">Activos</option>
+              <option value="inactivos">Inactivos</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-100">
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Empleado / Código</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Completo</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identidad</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Correo</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contrato</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Departamento</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ubicación / Piso</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha Ingreso</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="!listaEmpleados || listaEmpleados.length === 0">
+              <td colspan="9" class="p-20 text-center text-slate-400 italic">
+                No hay empleados registrados o no se pudo conectar con el servidor.
+              </td>
+            </tr>
+            <tr v-else-if="filteredEmpleados.length === 0">
+              <td colspan="9" class="p-20 text-center text-slate-400 italic">
+                No se encontraron resultados para la búsqueda.
+              </td>
+            </tr>
+            <tr v-else v-for="emp in filteredEmpleados" :key="emp.id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+              <td class="p-5 flex items-center gap-3">
+                <div class="h-10 w-10 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100 flex items-center justify-center">
+                  <img v-if="emp.foto" :src="`http://localhost:3000${emp.foto}`" alt="Foto" class="w-full h-full object-cover" />
+                  <span v-else class="text-slate-400 font-bold text-sm">{{ emp.nombre.charAt(0) }}</span>
+                </div>
+                <div class="font-bold text-slate-800 text-sm">
+                  {{ emp.codigo_empleado || 'N/A' }}
+                </div>
+              </td>
+              <td class="p-5 font-bold text-slate-800">
+                {{ emp.nombre }} {{ emp.apellido }}
+              </td>
+              <td class="p-5 text-sm text-slate-600">
+                {{ emp.identidad }}
+              </td>
+              <td class="p-5 text-sm text-slate-600">
+                {{ emp.correo || 'N/A' }}
+              </td>
+              <td class="p-5">
+                <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-full">
+                  {{ emp.tipo_contrato || 'Permanente' }}
+                </span>
+              </td>
+              <td class="p-5 text-sm text-slate-600">
+                {{ obtenerNombreDepartamento(emp.departamento_id) }}
+              </td>
+              <td class="p-5 text-sm text-slate-600">
+                {{ emp.ubicacion || 'N/A' }}
+              </td>
+              <td class="p-5 text-sm text-slate-500">
+                {{ emp.fecha_inicio ? new Date(emp.fecha_inicio).toLocaleDateString('es-HN') : 'N/A' }}
+              </td>
+              <td class="p-5 text-center">
+                <NuxtLink :to="`/empleados/${emp.id}`" class="inline-block bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                  Ver Detalle
+                </NuxtLink>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- Modal Nuevo Empleado -->
+    <div v-if="mostrarModalNuevo" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+      <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-5xl my-8">
+        <header class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 uppercase tracking-tight">Nuevo Empleado</h3>
+            <p class="text-xs text-slate-500 font-medium italic mt-1">Complete la ficha de información del colaborador.</p>
+          </div>
+          <button @click="cerrarModalNuevo" class="text-slate-400 hover:text-red-500 p-2 bg-white rounded-lg shadow-sm border border-slate-200 transition-colors">
+            ❌
+          </button>
+        </header>
+
+        <div class="p-8 max-h-[70vh] overflow-y-auto">
+          <form @submit.prevent="guardarEmpleado" class="space-y-8">
+            
+            <div>
+              <h2 class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-6 border-b pb-2">1. Información Personal</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div v-for="field in camposPersonales" :key="field.id">
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
+                  <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder" required
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Género</label>
+                  <select v-model="form.genero" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all">
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                  </select>
+                </div>
+                <div class="md:col-span-3">
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Dirección Exacta</label>
+                  <textarea v-model="form.direccion" rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-6 border-b pb-2">2. Información Laboral</h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Tipo de Contrato</label>
+                  <select v-model="form.tipo_contrato" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all">
+                    <option value="Permanente">Permanente</option>
+                    <option value="Temporal">Temporal</option>
+                    <option value="Servicios Profesionales">Servicios Profesionales</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Departamento</label>
+                  <select v-model="form.departamento_id" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all">
+                    <option value="">Seleccione</option>
+                    <option v-for="dep in departamentos" :key="dep.id" :value="dep.id">
+                      {{ dep.nombre }}
+                    </option>
+                  </select>
+                </div>
+                <div v-for="field in camposLaborales" :key="field.id">
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
+                  <input v-model="form[field.id]" :type="field.type" required
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-6 border-b pb-2">3. Contacto de Emergencia 1</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div v-for="field in camposEmergencia" :key="field.id">
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
+                  <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder" required
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8">
+              <h2 class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-6 border-b pb-2">4. Contacto de Emergencia 2 (Opcional)</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div v-for="field in camposEmergencia2" :key="field.id">
+                  <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
+                  <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder"
+                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-4 mt-10 pt-4 border-t border-slate-100">
+              <button type="button" @click="cerrarModalNuevo" class="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors">
+                Cancelar
+              </button>
+              <button type="submit" :disabled="loadingGuardar"
+                class="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50">
+                {{ loadingGuardar ? 'Guardando...' : 'Guardar Empleado' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import axios from 'axios'
+import { ref, computed, onMounted } from 'vue'
+
+const listaEmpleados = ref([])
+const searchQuery = ref('')
+const statusFilter = ref('todos')
+const mostrarModalNuevo = ref(false)
+const loadingGuardar = ref(false)
+const departamentos = ref([])
+const nombreUsuario = ref('')
+const fotoUsuario = ref(null)
+
+const obtenerNombreDepartamento = (id) => {
+  if (!id) return 'N/A'
+  const dep = departamentos.value.find(d => d.id === id)
+  return dep ? dep.nombre : 'N/A'
+}
+
+const form = ref({
+  codigo_empleado: '', identidad: '', nombre: '', apellido: '', fecha_nacimiento: '',
+  correo: '', telefono: '', direccion: '',
+  tipo_contrato: 'Permanente', fecha_inicio: '', ciudad: '', ubicacion: '', departamento_id: '',
+  emergencia_parentesco: '', emergencia_nombre: '', emergencia_telefono: '',
+  emergencia_parentesco_2: '', emergencia_nombre_2: '', emergencia_telefono_2: ''
+})
+
+const camposPersonales = [
+  { id: 'codigo_empleado', label: 'Código Empleado', type: 'text', placeholder: 'Ej: EMP-001' },
+  { id: 'identidad', label: 'Identidad', type: 'text', placeholder: '0000-0000-00000' },
+  { id: 'nombre', label: 'Nombres', type: 'text', placeholder: 'Ej: Juan Alberto' },
+  { id: 'apellido', label: 'Apellidos', type: 'text', placeholder: 'Ej: Perez Flores' },
+  { id: 'fecha_nacimiento', label: 'F. Nacimiento', type: 'date' },
+  { id: 'correo', label: 'Correo Personal', type: 'email', placeholder: 'empleado@correo.com' },
+  { id: 'telefono', label: 'Teléfono', type: 'text', placeholder: '+504 0000-0000' }
+]
+
+const camposLaborales = [
+  { id: 'fecha_inicio', label: 'Fecha de Inicio', type: 'date' },
+  { id: 'ciudad', label: 'Ciudad', type: 'text' },
+  { id: 'ubicacion', label: 'Ubicación / Piso', type: 'text' }
+]
+
+const camposEmergencia = [
+  { id: 'emergencia_parentesco', label: 'Parentesco', type: 'text', placeholder: 'Madre, Padre, etc.' },
+  { id: 'emergencia_nombre', label: 'Nombre Completo', type: 'text' },
+  { id: 'emergencia_telefono', label: 'Teléfono Emergencia', type: 'text' }
+]
+
+const camposEmergencia2 = [
+  { id: 'emergencia_parentesco_2', label: 'Parentesco', type: 'text', placeholder: 'Madre, Padre, etc.' },
+  { id: 'emergencia_nombre_2', label: 'Nombre Completo', type: 'text' },
+  { id: 'emergencia_telefono_2', label: 'Teléfono Emergencia', type: 'text' }
+]
+
+const filteredEmpleados = computed(() => {
+  let empleados = listaEmpleados.value;
+
+  if (statusFilter.value === 'activos') {
+    empleados = empleados.filter(emp => emp.estado === 'Activo' || emp.estado === 1 || emp.estado === true);
+  } else if (statusFilter.value === 'inactivos') {
+    empleados = empleados.filter(emp => emp.estado === 'Inactivo' || emp.estado === 0 || emp.estado === false);
+  }
+
+  if (!searchQuery.value) return empleados;
+  
+  const lowerCaseQuery = searchQuery.value.toLowerCase();
+  return empleados.filter(emp => {
+    const fullName = `${emp.nombre} ${emp.apellido}`.toLowerCase();
+    const identity = emp.identidad?.toLowerCase() || '';
+    const code = emp.codigo_empleado?.toLowerCase() || '';
+    return fullName.includes(lowerCaseQuery) || identity.includes(lowerCaseQuery) || code.includes(lowerCaseQuery);
+  });
+})
+
+const cargarEmpleados = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/api/empleados/lista', {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
+    listaEmpleados.value = res.data
+  } catch (error) {
+    console.error("Error cargando los empleados:", error)
+  }
+}
+
+const abrirModalNuevo = () => {
+  form.value = {
+    codigo_empleado: '', identidad: '', nombre: '', apellido: '', fecha_nacimiento: '',
+    correo: '', telefono: '', direccion: '',
+    genero: 'Masculino',
+    tipo_contrato: 'Permanente', fecha_inicio: '', ciudad: '', ubicacion: '',
+    emergencia_parentesco: '', emergencia_nombre: '', emergencia_telefono: '',
+    emergencia_parentesco_2: '', emergencia_nombre_2: '', emergencia_telefono_2: ''
+  }
+  mostrarModalNuevo.value = true
+}
+
+const cerrarModalNuevo = () => {
+  mostrarModalNuevo.value = false
+}
+
+const guardarEmpleado = async () => {
+  try {
+    loadingGuardar.value = true
+    const res = await axios.post('http://localhost:3000/api/empleados/crear', form.value)
+    
+    alert('✅ ' + res.data.mensaje)
+    
+    cerrarModalNuevo()
+    await cargarEmpleados()
+    
+  } catch (e) {
+    alert('❌ ' + (e.response?.data?.mensaje || 'Error al guardar'))
+  } finally {
+    loadingGuardar.value = false
+  }
+}
+
+onMounted(async () => {
+  nombreUsuario.value = localStorage.getItem('usuarioNombre') || 'Invitado'
+  fotoUsuario.value = localStorage.getItem('usuarioFoto') || null
+
+  await cargarEmpleados()
+  try {
+    const res = await axios.get('http://localhost:3000/api/departamentos/lista')
+    departamentos.value = res.data
+  } catch (error) {
+    console.error("Error cargando departamentos:", error)
+  }
+})
+</script>

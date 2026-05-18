@@ -1,0 +1,255 @@
+<template>
+  <div class="min-h-screen bg-gray-100 flex font-sans">
+    <aside class="w-64 bg-slate-800 text-white flex flex-col shadow-xl fixed h-full z-10">
+      <div class="p-6 text-2xl font-bold border-b border-slate-700 tracking-tight text-blue-400 uppercase">
+        RRHH Innova
+      </div>
+      
+      <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <div v-for="item in menuUsuario" :key="item.ruta">
+          <NuxtLink :to="item.ruta" 
+            class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group"
+            active-class="bg-blue-600 shadow-lg">
+            <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
+            <span class="text-sm font-medium">{{ item.nombre }}</span>
+          </NuxtLink>
+        </div>
+      </nav>
+
+      <div class="p-4 border-t border-slate-700 bg-slate-900/50">
+        <div class="mb-4 px-2 flex flex-col">
+          <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Nivel de Acceso</span>
+          <span class="text-xs font-bold text-blue-400">{{ rolNombre }}</span>
+        </div>
+        <button @click="logout" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all font-bold text-xs uppercase tracking-widest">
+          <span>🚪</span> Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 ml-64 p-8">
+      <header class="mb-10 flex flex-col gap-5 bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center w-full">
+          <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight uppercase">Departamentos</h1>
+            <p class="text-slate-500 mt-1 font-medium italic">Gestión de departamentos de la empresa.</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <button @click="abrirModalCrear" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs hover:bg-green-700 transition-all shadow-lg shadow-green-200 flex items-center gap-2">
+              <span>+</span> Crear Nuevo
+            </button>
+          </div>
+        </div>
+        <div class="w-full">
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="Buscar departamento..." 
+            class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:italic"
+          >
+        </div>
+      </header>
+
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-100">
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Departamento</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Creado Por</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha de Creación</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Modificado Por</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Última Modificación</th>
+              <th class="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="loading" class="border-b border-slate-50">
+              <td colspan="7" class="p-10 text-center text-slate-400 italic">Cargando departamentos...</td>
+            </tr>
+            <tr v-else-if="filteredDepartamentos.length === 0" class="border-b border-slate-50">
+              <td colspan="7" class="p-10 text-center text-slate-400 italic">No se encontraron departamentos.</td>
+            </tr>
+            <tr v-else v-for="dept in filteredDepartamentos" :key="dept.id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+              <td class="p-5 font-bold text-slate-800">{{ dept.nombre }}</td>
+              <td class="p-5">
+                <span :class="dept.estado ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">
+                  {{ dept.estado ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="p-5 text-sm text-slate-600">{{ dept.creado_por || 'N/A' }}</td>
+              <td class="p-5 text-sm text-slate-500">{{ dept.fecha_creacion ? new Date(dept.fecha_creacion).toLocaleDateString('es-HN') : 'N/A' }}</td>
+              <td class="p-5 text-sm text-slate-600">{{ dept.modificado_por || 'N/A' }}</td>
+              <td class="p-5 text-sm text-slate-500">{{ dept.ultima_modificacion ? new Date(dept.ultima_modificacion).toLocaleDateString('es-HN') : 'N/A' }}</td>
+              <td class="p-5 text-center flex justify-center gap-2">
+                <button @click="abrirModalEditar(dept)" class="bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white p-2 rounded-lg text-xs font-bold transition-colors" title="Editar">
+                  ✏️
+                </button>
+                <button @click="toggleEstado(dept)" :class="dept.estado ? 'bg-red-100 text-red-600 hover:bg-red-600 hover:text-white' : 'bg-green-100 text-green-600 hover:bg-green-600 hover:text-white'" class="p-2 rounded-lg text-xs font-bold transition-colors" :title="dept.estado ? 'Desactivar' : 'Activar'">
+                  {{ dept.estado ? '🛑' : '✅' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Modal Crear/Editar -->
+      <div v-if="mostrarModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden">
+          <div class="bg-slate-800 p-6 flex justify-between items-center text-white">
+            <h2 class="text-xl font-black uppercase tracking-tight">{{ esEdicion ? 'Editar Departamento' : 'Crear Departamento' }}</h2>
+            <button @click="cerrarModal" class="text-slate-400 hover:text-white text-3xl font-bold leading-none">&times;</button>
+          </div>
+          
+          <div class="p-8">
+            <form @submit.prevent="guardarDepartamento" class="space-y-5">
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Nombre del Departamento</label>
+                <input type="text" v-model="form.nombre" required class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Recursos Humanos">
+              </div>
+              
+              <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Descripción</label>
+                <textarea v-model="form.descripcion" rows="3" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Opcional..."></textarea>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" @click="cerrarModal" class="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-colors shadow-md">
+                  {{ esEdicion ? 'Actualizar' : 'Guardar' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+
+const rolID = ref(null)
+const rolNombre = ref('Cargando...')
+const menuUsuario = ref([])
+const usuarioActual = ref('')
+
+const departamentos = ref([])
+const loading = ref(true)
+const searchQuery = ref('')
+
+const mostrarModal = ref(false)
+const esEdicion = ref(false)
+const form = ref({ id: null, nombre: '', descripcion: '' })
+
+const filteredDepartamentos = computed(() => {
+  if (!searchQuery.value) return departamentos.value;
+  const lowerCaseQuery = searchQuery.value.toLowerCase();
+  return departamentos.value.filter(d => 
+    d.nombre.toLowerCase().includes(lowerCaseQuery) || 
+    (d.descripcion && d.descripcion.toLowerCase().includes(lowerCaseQuery))
+  );
+})
+
+const cargarDepartamentos = async () => {
+  try {
+    loading.value = true
+    const res = await axios.get('http://localhost:3000/api/departamentos/lista')
+    departamentos.value = res.data
+  } catch (error) {
+    console.error('Error cargando departamentos', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const abrirModalCrear = () => {
+  esEdicion.value = false
+  form.value = { id: null, nombre: '', descripcion: '' }
+  mostrarModal.value = true
+}
+
+const abrirModalEditar = (dept) => {
+  esEdicion.value = true
+  form.value = { id: dept.id, nombre: dept.nombre, descripcion: dept.descripcion }
+  mostrarModal.value = true
+}
+
+const cerrarModal = () => {
+  mostrarModal.value = false
+}
+
+const guardarDepartamento = async () => {
+  try {
+    const payload = {
+      nombre: form.value.nombre,
+      descripcion: form.value.descripcion,
+      creado_por: usuarioActual.value,
+      modificado_por: usuarioActual.value
+    }
+
+    if (esEdicion.value) {
+      await axios.put(`http://localhost:3000/api/departamentos/editar/${form.value.id}`, payload)
+      alert('✅ Departamento actualizado exitosamente')
+    } else {
+      await axios.post('http://localhost:3000/api/departamentos/crear', payload)
+      alert('✅ Departamento creado exitosamente')
+    }
+    cerrarModal()
+    cargarDepartamentos()
+  } catch (error) {
+    console.error('Error al guardar', error)
+    alert('❌ Error al guardar el departamento')
+  }
+}
+
+const toggleEstado = async (dept) => {
+  const nuevoEstado = dept.estado ? 0 : 1
+  const accion = dept.estado ? 'desactivar' : 'activar'
+  if (!confirm(`¿Está seguro que desea ${accion} el departamento ${dept.nombre}?`)) return
+
+  try {
+    await axios.put(`http://localhost:3000/api/departamentos/estado/${dept.id}`, {
+      estado: nuevoEstado,
+      modificado_por: usuarioActual.value
+    })
+    cargarDepartamentos()
+  } catch (error) {
+    console.error('Error al cambiar estado', error)
+    alert('❌ Error al cambiar el estado')
+  }
+}
+
+const logout = () => {
+  localStorage.clear()
+  navigateTo('/login')
+}
+
+onMounted(async () => {
+  rolID.value = localStorage.getItem('usuarioRol') || 2
+  usuarioActual.value = localStorage.getItem('usuarioNombre') || 'Usuario Sistema'
+
+  if (rolID.value == 1) {
+    rolNombre.value = 'Administrador IT'
+  } else if (rolID.value == 2) {
+    rolNombre.value = 'Recursos Humanos'
+  } else {
+    rolNombre.value = 'Empleado'
+  }
+
+  try {
+    const m = await axios.get(`http://localhost:3000/api/menu/${rolID.value}`)
+    menuUsuario.value = m.data
+  } catch (e) {
+    console.error('Error cargando menú', e)
+  }
+
+  cargarDepartamentos()
+})
+</script>
