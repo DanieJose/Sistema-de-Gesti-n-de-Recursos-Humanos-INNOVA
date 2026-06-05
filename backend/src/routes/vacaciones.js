@@ -285,4 +285,25 @@ router.delete('/:id', (req, res) => {
     });
 });
 
+router.get('/proximas', (req, res) => {
+    const db = req.app.get('db');
+    
+    // Obtener vacaciones futuras o en curso (fechaFinal >= hoy)
+    const query = `
+        SELECT v.*, e.nombre, e.apellido, e.codigo_empleado, d.nombre as departamento
+        FROM vacaciones v
+        JOIN empleados e ON v.empleado_id = e.id
+        LEFT JOIN departamentos d ON e.departamento_id = d.id
+        WHERE v.fechaFinal >= CURDATE()
+        ORDER BY v.fechaInicio ASC
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al obtener proyecciones', detalle: err.message });
+        }
+        res.json(results);
+    });
+});
+
 module.exports = router;

@@ -66,8 +66,14 @@
       <!-- HEADER -->
       <header class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
         <div>
-          <h1 class="text-2xl font-black text-slate-800 tracking-tight uppercase">Módulo de Reportes</h1>
-          <p class="text-slate-500 mt-1 font-medium text-sm">Dashboard Analítico y Reportes Detallados</p>
+          <div class="flex items-center gap-3">
+             <h1 class="text-2xl font-black text-slate-800 tracking-tight uppercase">Módulo de Reportes</h1>
+             <div class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-100 rounded-full animate-pulse">
+                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <span class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">En Vivo</span>
+             </div>
+          </div>
+          <p class="text-slate-500 mt-1 font-medium text-sm">Dashboard Analítico e Integrado en Tiempo Real</p>
         </div>
         <div class="w-full md:w-auto flex flex-col md:flex-row items-center gap-4">
           <button @click="imprimirReporte" class="w-full md:w-auto bg-slate-800 text-white px-5 py-2.5 rounded-lg font-bold uppercase text-xs hover:bg-slate-900 transition-all shadow-sm flex items-center justify-center gap-2 no-print">
@@ -130,89 +136,170 @@
         <button @click="activeTab = 'tickets'" :class="['px-6 py-3 font-bold text-xs uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors', activeTab === 'tickets' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300']">
           🎫 Soporte & Tickets
         </button>
+        <button @click="activeTab = 'proyecciones'" :class="['px-6 py-3 font-bold text-xs uppercase tracking-widest whitespace-nowrap border-b-2 transition-colors', activeTab === 'proyecciones' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300']">
+          📅 Proyecciones Vacaciones
+        </button>
       </div>
 
       <!-- TAB: DASHBOARD -->
-      <div v-if="activeTab === 'dashboard'">
-        <!-- KPIs -->
-        <div v-if="loadingStats" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center text-slate-400 text-sm italic">
-          Cargando indicadores...
+      <div v-if="activeTab === 'dashboard'" class="space-y-6 animate-in fade-in duration-300">
+        <!-- KPIs Principales e Integrados -->
+        <div v-if="loadingStats" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center text-slate-400 text-sm italic flex flex-col items-center gap-3">
+          <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          Cargando indicadores en tiempo real...
         </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center gap-1 border-l-4 border-l-blue-500">
-            <div class="flex items-center justify-between">
-              <span class="text-2xl">👥</span>
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Empleados</p>
+        <div v-else class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+           <!-- Empleados -->
+          <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-5 rounded-2xl shadow-lg shadow-blue-500/20 text-white relative overflow-hidden group hover:-translate-y-1 transition-transform">
+            <div class="absolute -right-4 -top-4 text-white/20 text-7xl group-hover:scale-110 transition-transform">👥</div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-blue-100 mb-1 relative z-10">Total Empleados</p>
+            <p class="text-4xl font-black relative z-10">{{ stats.total || 0 }}</p>
+            <div class="mt-2 text-[10px] font-medium text-blue-100 relative z-10 flex justify-between">
+               <span>Activos: <strong class="text-white">{{ stats.activos || 0 }}</strong></span>
+               <span>Inactivos: <strong class="text-white">{{ stats.inactivos || 0 }}</strong></span>
             </div>
-            <p class="text-3xl font-black text-slate-800 mt-2">{{ stats.total || 0 }}</p>
           </div>
           
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center gap-1 border-l-4 border-l-emerald-500">
-            <div class="flex items-center justify-between">
-              <span class="text-2xl">✅</span>
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Activos</p>
-            </div>
-            <p class="text-3xl font-black text-emerald-600 mt-2">{{ stats.activos || 0 }}</p>
+          <!-- Tickets Ptes. -->
+          <div class="bg-gradient-to-br from-amber-400 to-orange-500 p-5 rounded-2xl shadow-lg shadow-orange-500/20 text-white relative overflow-hidden group hover:-translate-y-1 transition-transform">
+            <div class="absolute -right-4 -top-4 text-white/20 text-7xl group-hover:scale-110 transition-transform">🎫</div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-orange-100 mb-1 relative z-10">Tickets Ptes.</p>
+            <p class="text-4xl font-black relative z-10">{{ stats.tickets || 0 }}</p>
+            <div class="mt-2 text-[10px] font-medium text-orange-100 relative z-10">Soporte IT Pendiente</div>
           </div>
 
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center gap-1 border-l-4 border-l-red-500">
-            <div class="flex items-center justify-between">
-              <span class="text-2xl">🛑</span>
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Inactivos</p>
+          <!-- De Vacaciones -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-bl-full -z-10 group-hover:scale-150 transition-transform"></div>
+            <div class="flex items-start justify-between">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">De Vacaciones<br>(Actual)</p>
+              <span class="text-2xl opacity-80 group-hover:scale-110 transition-transform">🏖️</span>
             </div>
-            <p class="text-3xl font-black text-red-600 mt-2">{{ stats.inactivos || 0 }}</p>
+            <p class="text-3xl font-black text-emerald-600 mt-2">{{ stats.de_vacaciones || 0 }}</p>
           </div>
 
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center gap-1 border-l-4 border-l-yellow-500">
-            <div class="flex items-center justify-between">
-              <span class="text-2xl">🎫</span>
-              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tickets Ptes.</p>
+          <!-- Faltas Mes -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-16 h-16 bg-rose-500/5 rounded-bl-full -z-10 group-hover:scale-150 transition-transform"></div>
+            <div class="flex items-start justify-between">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Faltas<br>(Este Mes)</p>
+              <span class="text-2xl opacity-80 group-hover:scale-110 transition-transform">⚠️</span>
             </div>
-            <p class="text-3xl font-black text-yellow-600 mt-2">{{ stats.tickets || 0 }}</p>
+            <p class="text-3xl font-black text-rose-600 mt-2">{{ stats.faltas_mes || 0 }}</p>
+          </div>
+
+          <!-- Documentos Legales -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow group relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-500/5 rounded-bl-full -z-10 group-hover:scale-150 transition-transform"></div>
+            <div class="flex items-start justify-between">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Docs.<br>Legales</p>
+              <span class="text-2xl opacity-80 group-hover:scale-110 transition-transform">⚖️</span>
+            </div>
+            <p class="text-3xl font-black text-indigo-600 mt-2">{{ stats.doc_legales || 0 }}</p>
+          </div>
+          
+          <!-- Vencimientos -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition-shadow group relative overflow-hidden">
+             <div class="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 rounded-bl-full -z-10 group-hover:scale-150 transition-transform"></div>
+            <div class="flex items-start justify-between">
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Venc. Contrato<br>(30d)</p>
+              <span class="text-2xl opacity-80 group-hover:scale-110 transition-transform">📄</span>
+            </div>
+            <p class="text-3xl font-black text-purple-600 mt-2">{{ stats.vencimientos || 0 }}</p>
           </div>
         </div>
 
         <!-- CHARTS & ALERTS SECTION -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
           <!-- Empleados por Departamento (Bar Chart) -->
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:col-span-2 min-h-[300px]">
-            <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">Distribución por Departamento</h2>
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:col-span-2 min-h-[320px]">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                 Distribución por Departamento
+              </h2>
+            </div>
             <div class="flex-1 relative w-full h-full flex justify-center items-center">
-              <Bar v-if="!loadingDepts" :data="chartDeptData" :options="barOptions" />
+              <Bar v-if="!loadingDepts && chartDeptData" :data="chartDeptData" :options="barOptions" />
               <span v-else class="text-slate-400 italic text-xs">Cargando distribución...</span>
             </div>
           </div>
 
           <!-- Alertas y Estado -->
-          <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-4 md:gap-6">
             <!-- Chart 2: Empleados por Estado (Doughnut) -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[200px]">
-              <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-2">Estado de Plantilla</h2>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[220px]">
+              <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-2 flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                 Estado de Plantilla
+              </h2>
               <div class="flex-1 relative w-full h-full flex justify-center items-center">
-                <Doughnut v-if="!loadingStats" :data="chartEstadoData" :options="doughnutOptions" />
+                <Doughnut v-if="!loadingStats && chartEstadoData" :data="chartEstadoData" :options="doughnutOptions" />
               </div>
             </div>
             
             <!-- Alertas Rápidas -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col flex-1">
-              <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-3">Alertas</h2>
-              <div class="space-y-3">
-                <div class="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-100">
+            <div class="bg-gradient-to-b from-slate-800 to-slate-900 p-5 rounded-2xl shadow-sm flex flex-col flex-1 relative overflow-hidden">
+              <div class="absolute -right-4 -bottom-4 text-white/5 text-8xl">🔔</div>
+              <h2 class="text-sm font-black text-white uppercase tracking-widest mb-4 relative z-10 flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                 Avisos Importantes
+              </h2>
+              <div class="space-y-3 relative z-10">
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/10 backdrop-blur border border-white/5 hover:bg-white/20 transition-colors cursor-pointer group">
                   <div class="flex items-center gap-3">
-                    <span class="text-lg">📄</span>
-                    <span class="text-xs font-bold text-orange-800">Contratos (30d)</span>
+                    <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300 group-hover:scale-110 transition-transform">🎂</div>
+                    <span class="text-xs font-bold text-slate-200">Cumpleaños (Mes)</span>
                   </div>
-                  <span class="text-sm font-black text-orange-600">{{ stats.vencimientos || 0 }}</span>
+                  <span class="text-sm font-black text-white bg-purple-500/40 px-2 py-0.5 rounded-lg">{{ stats.cumpleaneros || 0 }}</span>
                 </div>
-                <div class="flex items-center justify-between p-3 rounded-lg bg-purple-50 border border-purple-100">
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white/10 backdrop-blur border border-white/5 hover:bg-white/20 transition-colors cursor-pointer group">
                   <div class="flex items-center gap-3">
-                    <span class="text-lg">🎂</span>
-                    <span class="text-xs font-bold text-purple-800">Cumpleaños</span>
+                    <div class="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-300 group-hover:scale-110 transition-transform">📄</div>
+                    <span class="text-xs font-bold text-slate-200">Renovaciones</span>
                   </div>
-                  <span class="text-sm font-black text-purple-600">{{ stats.cumpleaneros || 0 }}</span>
+                  <span class="text-sm font-black text-white bg-orange-500/40 px-2 py-0.5 rounded-lg">{{ stats.vencimientos || 0 }}</span>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- NEW CHARTS SECTION: GENDER & AGE -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+          <!-- Género -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[300px]">
+             <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-2 flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                 Distribución por Género
+              </h2>
+              <div class="flex-1 relative w-full h-full flex justify-center items-center pb-4">
+                <Doughnut v-if="!loadingEmpleados && chartGeneroData" :data="chartGeneroData" :options="doughnutOptions" />
+              </div>
+          </div>
+          <!-- Edad -->
+          <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[300px]">
+             <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest mb-2 flex items-center gap-2">
+                 <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                 Distribución por Edad
+              </h2>
+              <div class="flex-1 relative w-full h-full flex justify-center items-center pb-4">
+                <Pie v-if="!loadingEmpleados && chartEdadData" :data="chartEdadData" :options="doughnutOptions" />
+              </div>
+          </div>
+        </div>
+
+        <!-- TENDENCIAS DE CONTRATACIÓN (LINE CHART) -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col mb-6 min-h-[320px]">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+               <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+               Tendencias de Contratación (Anual)
+            </h2>
+          </div>
+          <div class="flex-1 relative w-full h-full flex justify-center items-center">
+            <Line v-if="!loadingEmpleados && chartTendenciasData" :data="chartTendenciasData" :options="lineOptions" />
+            <span v-else class="text-slate-400 italic text-xs">Cargando tendencias...</span>
           </div>
         </div>
       </div>
@@ -347,6 +434,54 @@
         </div>
       </div>
 
+      <!-- TAB: PROYECCIONES VACACIONES -->
+      <div v-if="activeTab === 'proyecciones'" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-slate-100 pb-4">
+          <h2 class="text-lg font-black text-slate-800 uppercase tracking-tighter">Proyecciones de Vacaciones</h2>
+          <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <button @click="exportarCSV(proyeccionesVacaciones, 'Proyecciones_Vacaciones')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs uppercase tracking-widest transition-colors shadow-sm flex items-center justify-center gap-2">
+              <span>📊</span> CSV
+            </button>
+          </div>
+        </div>
+
+        <div v-if="loadingProyecciones" class="text-center py-10 text-slate-400 italic">Cargando proyecciones de vacaciones...</div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="p-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Empleado</th>
+                <th class="p-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Departamento</th>
+                <th class="p-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Tipo</th>
+                <th class="p-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Fecha Inicio</th>
+                <th class="p-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Fecha Regreso</th>
+                <th class="p-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Días</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="vac in proyeccionesVacaciones" :key="vac.id" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                <td class="p-3 text-sm font-bold text-slate-900">
+                   {{ vac.nombre }} {{ vac.apellido }}<br/>
+                   <span class="text-xs text-slate-500 font-normal">{{ vac.codigo_empleado || 'N/A' }}</span>
+                </td>
+                <td class="p-3 text-xs font-medium text-slate-800">{{ vac.departamento || 'N/A' }}</td>
+                <td class="p-3 text-xs">
+                  <span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-blue-100 text-blue-700">
+                    {{ vac.tipoSolicitud }}
+                  </span>
+                </td>
+                <td class="p-3 text-xs text-slate-600 font-bold">{{ new Date(vac.fechaInicio).toLocaleDateString('es-HN', {timeZone: 'UTC'}) }}</td>
+                <td class="p-3 text-xs text-slate-600 font-bold">{{ new Date(vac.fechaRegreso).toLocaleDateString('es-HN', {timeZone: 'UTC'}) }}</td>
+                <td class="p-3 text-xs text-slate-600">{{ vac.diasVacaciones }}</td>
+              </tr>
+              <tr v-if="proyeccionesVacaciones.length === 0">
+                <td colspan="6" class="p-6 text-center text-slate-400 italic">No hay vacaciones próximas programadas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     <!-- Modal Perfil -->
     <div v-if="modalAbiertoPerfil" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
       <div class="bg-white w-full max-w-md overflow-hidden rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -406,13 +541,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js'
-import { Doughnut, Bar } from 'vue-chartjs'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement, LineElement } from 'chart.js'
+import { Doughnut, Bar, Pie, Line } from 'vue-chartjs'
 
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement)
 
 const router = useRouter()
 const rolID = ref(null)
@@ -421,6 +556,7 @@ const menuUsuario = ref([])
 const usuarioActual = ref('')
 const mobileMenuOpen = ref(false)
 const activeTab = ref('dashboard')
+let pollingInterval = null;
 
 // Lógica Modal Perfil
 const dropdownPerfilAbierto = ref(false)
@@ -502,6 +638,67 @@ const chartEstadoData = computed(() => ({
   datasets: [{ backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0, data: [stats.value.activos || 0, stats.value.inactivos || 0] }]
 }))
 
+const chartGeneroData = computed(() => {
+  const data = empleadosFiltrados.value;
+  let masculino = 0;
+  let femenino = 0;
+  let otro = 0;
+  
+  data.forEach(e => {
+    if (e.genero === 'Masculino') masculino++;
+    else if (e.genero === 'Femenino') femenino++;
+    else otro++;
+  });
+  
+  return {
+    labels: ['Masculino', 'Femenino', 'No especificado'],
+    datasets: [{
+      backgroundColor: ['#3b82f6', '#ec4899', '#94a3b8'],
+      borderWidth: 0,
+      data: [masculino, femenino, otro]
+    }]
+  };
+})
+
+const chartEdadData = computed(() => {
+  const data = empleadosFiltrados.value;
+  let r18_25 = 0;
+  let r26_35 = 0;
+  let r36_45 = 0;
+  let r46_plus = 0;
+  let desconocido = 0;
+  
+  const today = new Date();
+  
+  data.forEach(e => {
+    if (!e.fecha_nacimiento) {
+      desconocido++;
+      return;
+    }
+    const birthDate = new Date(e.fecha_nacimiento);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    if (age >= 18 && age <= 25) r18_25++;
+    else if (age >= 26 && age <= 35) r26_35++;
+    else if (age >= 36 && age <= 45) r36_45++;
+    else if (age > 45) r46_plus++;
+    else desconocido++;
+  });
+  
+  return {
+    labels: ['18-25', '26-35', '36-45', '46+', 'Desconocido'],
+    datasets: [{
+      backgroundColor: ['#f59e0b', '#10b981', '#6366f1', '#8b5cf6', '#cbd5e1'],
+      borderWidth: 0,
+      data: [r18_25, r26_35, r36_45, r46_plus, desconocido]
+    }]
+  };
+})
+
 const chartDeptData = computed(() => {
   return {
     labels: deptStats.value.map(d => d.departamento),
@@ -509,18 +706,101 @@ const chartDeptData = computed(() => {
   }
 })
 
-const cargarStats = async () => {
+const lineOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom',
+      labels: {
+        usePointStyle: true,
+        boxWidth: 8,
+        font: { size: 10, family: "'Inter', sans-serif" }
+      }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+    }
+  },
+  scales: {
+    y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } },
+    x: { ticks: { font: { size: 10 } } }
+  },
+  interaction: {
+    mode: 'nearest',
+    axis: 'x',
+    intersect: false
+  }
+}
+
+const chartTendenciasData = computed(() => {
+  const data = empleadosFiltrados.value;
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  
+  const activosPorMes = Array(12).fill(0);
+  const finalizadosPorMes = Array(12).fill(0);
+  const renovadosPorMes = Array(12).fill(0);
+  
+  data.forEach(e => {
+    if (e.fecha_inicio) {
+      const date = new Date(e.fecha_inicio);
+      const month = date.getMonth();
+      
+      if (e.estado == 1) {
+        activosPorMes[month]++;
+        if (new Date().getFullYear() - date.getFullYear() > 0) {
+           renovadosPorMes[month]++;
+        }
+      } else {
+        finalizadosPorMes[month]++;
+      }
+    }
+  });
+
+  return {
+    labels: meses,
+    datasets: [
+      {
+        label: 'Activos',
+        borderColor: '#10b981',
+        backgroundColor: '#10b981',
+        data: activosPorMes,
+        tension: 0.4,
+        fill: false
+      },
+      {
+        label: 'Finalizados',
+        borderColor: '#ef4444',
+        backgroundColor: '#ef4444',
+        data: finalizadosPorMes,
+        tension: 0.4,
+        fill: false
+      },
+      {
+        label: 'Renovados',
+        borderColor: '#3b82f6',
+        backgroundColor: '#3b82f6',
+        data: renovadosPorMes,
+        tension: 0.4,
+        fill: false
+      }
+    ]
+  };
+})
+
+const cargarStats = async (isPolling = false) => {
   try {
-    loadingStats.value = true
+    if (!isPolling) loadingStats.value = true
     const res = await axios.get('http://localhost:3007/api/stats/resumen')
     stats.value = res.data
   } catch (error) { console.error('Error cargando estadísticas', error) } 
   finally { loadingStats.value = false }
 }
 
-const cargarDepartamentosStats = async () => {
+const cargarDepartamentosStats = async (isPolling = false) => {
   try {
-    loadingDepts.value = true
+    if (!isPolling) loadingDepts.value = true
     const res = await axios.get('http://localhost:3007/api/stats/empleados-por-departamento')
     deptStats.value = res.data
   } catch (error) { console.error('Error cargando stats de departamentos', error) } 
@@ -533,9 +813,9 @@ const loadingEmpleados = ref(false)
 const empleadosFiltro = ref('')
 const empleadosEstado = ref('todos')
 
-const cargarEmpleados = async () => {
+const cargarEmpleados = async (isPolling = false) => {
   try {
-    loadingEmpleados.value = true
+    if (!isPolling) loadingEmpleados.value = true
     const res = await axios.get('http://localhost:3007/api/empleados/lista')
     empleados.value = res.data
   } catch (e) {
@@ -567,9 +847,9 @@ const loadingTickets = ref(false)
 const ticketsFiltroEstado = ref('todos')
 const ticketsFiltroPrioridad = ref('todos')
 
-const cargarTickets = async () => {
+const cargarTickets = async (isPolling = false) => {
   try {
-    loadingTickets.value = true
+    if (!isPolling) loadingTickets.value = true
     const res = await axios.get('http://localhost:3007/api/tickets/lista')
     tickets.value = res.data
   } catch (e) {
@@ -589,6 +869,22 @@ const ticketsFiltrados = computed(() => {
   }
   return list
 })
+
+// --- PROYECCIONES VACACIONES ---
+const proyeccionesVacaciones = ref([])
+const loadingProyecciones = ref(false)
+
+const cargarProyecciones = async (isPolling = false) => {
+  try {
+    if (!isPolling) loadingProyecciones.value = true
+    const res = await axios.get('http://localhost:3007/api/vacaciones/proximas')
+    proyeccionesVacaciones.value = res.data
+  } catch (e) {
+    console.error('Error cargando proyecciones:', e)
+  } finally {
+    loadingProyecciones.value = false
+  }
+}
 
 const getBadgeClass = (val) => {
   const map = {
@@ -673,12 +969,26 @@ onMounted(async () => {
     console.error('Error cargando menú', e)
   }
 
-  // Cargar todos los datos para las diferentes pestañas
+  // Cargar todos los datos iniciales
   await cargarDepartamentos()
-  cargarStats()
-  cargarDepartamentosStats()
-  cargarEmpleados()
-  cargarTickets()
+  cargarStats(false)
+  cargarDepartamentosStats(false)
+  cargarEmpleados(false)
+  cargarTickets(false)
+  cargarProyecciones(false)
+
+  // Iniciar Polling en tiempo real (cada 15 segundos)
+  pollingInterval = setInterval(() => {
+    cargarStats(true)
+    cargarDepartamentosStats(true)
+    cargarEmpleados(true)
+    cargarTickets(true)
+    cargarProyecciones(true)
+  }, 15000)
+})
+
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
 })
 </script>
 

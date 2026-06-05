@@ -129,7 +129,10 @@ app.get('/api/stats/resumen', (req, res) => {
             (SELECT COUNT(*) FROM tickets WHERE estado = 'Pendiente') as tickets,
             (SELECT COUNT(*) FROM departamentos) as categorias,
             (SELECT COUNT(*) FROM empleados WHERE MONTH(fecha_nacimiento) = MONTH(CURRENT_DATE)) as cumpleaneros,
-            (SELECT COUNT(*) FROM contratos c1 WHERE c1.id IN (SELECT max_id FROM (SELECT MAX(id) AS max_id FROM contratos GROUP BY empleado_id) AS sub) AND c1.fechaFinal BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY)) as vencimientos
+            (SELECT COUNT(*) FROM contratos c1 WHERE c1.id IN (SELECT max_id FROM (SELECT MAX(id) AS max_id FROM contratos GROUP BY empleado_id) AS sub) AND c1.fechaFinal BETWEEN CURRENT_DATE AND DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY)) as vencimientos,
+            (SELECT COUNT(*) FROM vacaciones WHERE CURRENT_DATE BETWEEN fechaInicio AND fechaFinal) as de_vacaciones,
+            (SELECT COUNT(*) FROM faltas WHERE MONTH(fecha) = MONTH(CURRENT_DATE) AND YEAR(fecha) = YEAR(CURRENT_DATE)) as faltas_mes,
+            (SELECT COUNT(*) FROM documentos_legales) as doc_legales
         FROM DUAL;
     `;
     db.query(sql, (err, results) => {
