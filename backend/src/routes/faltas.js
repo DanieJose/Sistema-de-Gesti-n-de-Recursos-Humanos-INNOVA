@@ -1,16 +1,37 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
-router.post('/registrar', (req, res) => {
+// Configuración de multer
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const dir = path.join(__dirname, '../../uploads/faltas');
+        if (!fs.existsSync(dir)){
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        cb(null, dir);
+    },
+    filename: function (req, file, cb) {
+        cb(null, 'falta-' + Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+router.post('/registrar', upload.single('documento'), (req, res) => {
     const db = req.app.get('db');
     const { empleado_id, fecha, motivo, sancion, creadoPor } = req.body;
+    
+    const documentoUrl = req.file ? `/uploads/faltas/${req.file.filename}` : null;
 
     const query = `
-        INSERT INTO faltas (empleado_id, fecha, motivo, sancion, creadoPor, modificadoPor)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO faltas (empleado_id, fecha, motivo, sancion, creadoPor, modificadoPor, documento)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(query, [empleado_id, fecha, motivo, sancion || null, creadoPor || 1, creadoPor || 1], (err, result) => {
+    db.query(query, [empleado_id, fecha, motivo, sancion || null, creadoPor || 1, creadoPor || 1, documentoUrl], (err, result) => {
         if (err) {
             console.error("Error al registrar falta:", err);
             return res.status(500).json({ error: "Error al registrar falta", detalle: err.message });
@@ -40,21 +61,30 @@ router.get('/empleado/:id', (req, res) => {
     });
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', upload.single('documento'), (req, res) => {
     const db = req.app.get('db');
     const id = req.params.id;
     const { fecha, motivo, sancion, modificadoPor } = req.body;
 
-    const query = `
+    let query = `
         UPDATE faltas SET
             fecha = ?, 
             motivo = ?, 
             sancion = ?,
             modificadoPor = ?
-        WHERE id = ?
     `;
+    
+    const params = [fecha, motivo, sancion || null, modificadoPor || 1];
+    
+    if (req.file) {
+        query += `, documento = ?`;
+        params.push(`/uploads/faltas/${req.file.filename}`);
+    }
+    
+    query += ` WHERE id = ?`;
+    params.push(id);
 
-    db.query(query, [fecha, motivo, sancion || null, modificadoPor || 1, id], (err, result) => {
+    db.query(query, params, (err, result) => {
         if (err) {
             return res.status(500).json({ error: "Error al actualizar falta", detalle: err.message });
         }

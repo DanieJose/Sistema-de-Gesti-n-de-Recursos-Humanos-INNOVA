@@ -6,8 +6,11 @@
       </div>
       
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-        <div v-for="item in menuUsuario" :key="item.ruta">
-          <button v-if="item.ruta === '/empleados/nuevo'" @click="abrirModalEmpleado"
+        <div v-for="(item, index) in menuUsuario" :key="item.ruta || index">
+          <div v-if="item.esCabecera" class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-6 mb-2 px-3">
+            {{ item.nombre }}
+          </div>
+          <button v-else-if="item.ruta === '/empleados/nuevo'" @click="abrirModalEmpleado"
              class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group">
             <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
             <span class="text-sm font-medium">{{ item.nombre }}</span>
@@ -40,17 +43,47 @@
           <p class="text-slate-500 mt-1 font-medium italic">📅 {{ fechaActual }}</p>
         </div>
         <div class="flex items-center gap-6">
-          <div @click="abrirModalPerfil" class="flex items-center gap-3 pl-6 border-l border-slate-200 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors">
-            <div v-if="fotoUsuario" class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-slate-100">
-              <img :src="`http://localhost:3000${fotoUsuario}`" class="w-full h-full object-cover" />
+          <div class="relative">
+            <div @click="dropdownPerfilAbierto = !dropdownPerfilAbierto" class="flex items-center gap-3 pl-6 border-l border-slate-200 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors">
+              <div v-if="fotoUsuario" class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-slate-100">
+                <img :src="`http://localhost:3007${fotoUsuario}`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-lg ring-2 ring-slate-100 uppercase">
+                {{ nombreUsuario.charAt(0) }}
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Usuario Activo</span>
+                <span class="text-base font-black text-slate-900 leading-tight">{{ nombreUsuario }}</span>
+              </div>
             </div>
-            <div v-else class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-lg ring-2 ring-slate-100 uppercase">
-              {{ nombreUsuario.charAt(0) }}
+
+            <!-- Dropdown Menu -->
+            <div v-if="dropdownPerfilAbierto" class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
+              <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center gap-4">
+                <div v-if="fotoUsuario" class="h-12 w-12 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm shrink-0">
+                  <img :src="`http://localhost:3007${fotoUsuario}`" class="w-full h-full object-cover" />
+                </div>
+                <div v-else class="h-12 w-12 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-xl ring-2 ring-white shadow-sm shrink-0 uppercase">
+                  {{ nombreUsuario.charAt(0) }}
+                </div>
+                <div>
+                  <p class="font-black text-slate-800 text-sm leading-tight">{{ nombreUsuario }}</p>
+                  <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">{{ rolNombre }}</p>
+                </div>
+              </div>
+              <div class="p-2 space-y-1">
+                <button @click="abrirModalPerfil(); dropdownPerfilAbierto = false" class="w-full text-left flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+                  <span class="text-lg group-hover:scale-110 transition-transform">👤</span>
+                  <span class="text-sm font-bold text-slate-700">Mi Perfil de Usuario</span>
+                </button>
+                <button @click="logout" class="w-full text-left flex items-center gap-3 p-3 hover:bg-red-50 rounded-xl transition-colors group">
+                  <span class="text-lg group-hover:scale-110 transition-transform">🚪</span>
+                  <span class="text-sm font-bold text-red-600">Cerrar Sesión</span>
+                </button>
+              </div>
             </div>
-            <div class="flex flex-col">
-              <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Usuario Activo</span>
-              <span class="text-base font-black text-slate-900 leading-tight">{{ nombreUsuario }}</span>
-            </div>
+            <!-- Overlay invisible para cerrar el dropdown si se hace click fuera -->
+            <div v-if="dropdownPerfilAbierto" @click="dropdownPerfilAbierto = false" class="fixed inset-0 z-40"></div>
           </div>
         </div>
       </header>
@@ -95,7 +128,7 @@
           <div v-if="dashboardLists.cumpleaneros && dashboardLists.cumpleaneros.length" class="space-y-3 overflow-y-auto pr-2 flex-1 scrollbar-thin">
             <NuxtLink v-for="emp in dashboardLists.cumpleaneros" :key="'cump-'+emp.id" :to="`/empleados/${emp.id}`" class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 hover:shadow-sm cursor-pointer transition-all active:scale-[0.98]">
               <div class="relative shrink-0">
-                <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden" :class="{'ring-2 ring-pink-500 ring-offset-2': calcularDiasRestantesTexto(emp.fecha_nacimiento) === '¡Hoy!'}"><img :src="`http://localhost:3000${emp.foto}`" class="w-full h-full object-cover"/></div>
+                <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden" :class="{'ring-2 ring-pink-500 ring-offset-2': calcularDiasRestantesTexto(emp.fecha_nacimiento) === '¡Hoy!'}"><img :src="`http://localhost:3007${emp.foto}`" class="w-full h-full object-cover"/></div>
                 <div v-else class="h-10 w-10 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center uppercase" :class="{'ring-2 ring-pink-500 ring-offset-2 bg-pink-100 text-pink-600': calcularDiasRestantesTexto(emp.fecha_nacimiento) === '¡Hoy!'}">{{ emp.nombre.charAt(0) }}</div>
                 <div v-if="calcularDiasRestantesTexto(emp.fecha_nacimiento) === '¡Hoy!'" class="absolute -bottom-1 -right-3 bg-pink-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-sm border border-white z-10 whitespace-nowrap animate-bounce">
                   🎉 ¡HOY!
@@ -139,7 +172,7 @@
           <div v-if="dashboardLists.vencimientos && dashboardLists.vencimientos.length" class="space-y-3 overflow-y-auto pr-2 flex-1 scrollbar-thin">
             <NuxtLink v-for="emp in dashboardLists.vencimientos" :key="'venc-'+emp.id" :to="`/empleados/${emp.empleado_id}`" class="flex items-center gap-4 p-3 bg-red-50 rounded-xl border border-red-100 hover:bg-red-100 hover:shadow-sm cursor-pointer transition-all active:scale-[0.98]">
               <div class="relative shrink-0">
-                <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden"><img :src="`http://localhost:3000${emp.foto}`" class="w-full h-full object-cover"/></div>
+                <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden"><img :src="`http://localhost:3007${emp.foto}`" class="w-full h-full object-cover"/></div>
                 <div v-else class="h-10 w-10 rounded-full bg-red-200 text-red-600 font-bold flex items-center justify-center uppercase">{{ emp.nombre.charAt(0) }}</div>
               </div>
               <div class="flex-1">
@@ -164,7 +197,7 @@
           </div>
           <div v-if="dashboardLists.activos && dashboardLists.activos.length" class="space-y-3 overflow-y-auto pr-2 flex-1 scrollbar-thin">
             <NuxtLink v-for="emp in dashboardLists.activos" :key="'act-'+emp.id" :to="`/empleados/${emp.id}`" class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 hover:shadow-sm cursor-pointer transition-all active:scale-[0.98]">
-              <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden shrink-0"><img :src="`http://localhost:3000${emp.foto}`" class="w-full h-full object-cover"/></div>
+              <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden shrink-0"><img :src="`http://localhost:3007${emp.foto}`" class="w-full h-full object-cover"/></div>
               <div v-else class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 font-bold flex items-center justify-center shrink-0 uppercase">{{ emp.nombre.charAt(0) }}</div>
               <div class="flex-1">
                 <p class="font-bold text-sm text-slate-800">{{ emp.nombre }} {{ emp.apellido }}</p>
@@ -185,7 +218,7 @@
           </div>
           <div v-if="dashboardLists.inactivos && dashboardLists.inactivos.length" class="space-y-3 overflow-y-auto pr-2 flex-1 scrollbar-thin">
             <NuxtLink v-for="emp in dashboardLists.inactivos" :key="'inact-'+emp.id" :to="`/empleados/${emp.id}`" class="flex items-center gap-4 p-3 bg-slate-50 rounded-xl opacity-75 hover:bg-slate-100 hover:opacity-100 hover:shadow-sm cursor-pointer transition-all active:scale-[0.98]">
-              <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden shrink-0 grayscale"><img :src="`http://localhost:3000${emp.foto}`" class="w-full h-full object-cover"/></div>
+              <div v-if="emp.foto" class="h-10 w-10 rounded-full overflow-hidden shrink-0 grayscale"><img :src="`http://localhost:3007${emp.foto}`" class="w-full h-full object-cover"/></div>
               <div v-else class="h-10 w-10 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center shrink-0 uppercase">{{ emp.nombre.charAt(0) }}</div>
               <div class="flex-1">
                 <p class="font-bold text-sm text-slate-600">{{ emp.nombre }} {{ emp.apellido }}</p>
@@ -291,7 +324,7 @@
             <div class="mb-6 flex flex-col items-center">
               <div class="relative group cursor-pointer" @click="triggerFileInputPerfil">
                 <div v-if="fotoUsuario" class="h-20 w-20 rounded-full flex items-center justify-center overflow-hidden ring-4 ring-slate-100 shadow-lg mb-4">
-                  <img :src="`http://localhost:3000${fotoUsuario}`" class="w-full h-full object-cover" />
+                  <img :src="`http://localhost:3007${fotoUsuario}`" class="w-full h-full object-cover" />
                 </div>
                 <div v-else class="h-20 w-20 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-3xl ring-4 ring-slate-100 uppercase mb-4 shadow-lg">
                   {{ nombreUsuario.charAt(0) }}
@@ -354,6 +387,8 @@ const modalAbiertoPerfil = ref(false)
 const loadingPassword = ref(false)
 const formPassword = ref({ actual: '', nueva: '', confirmar: '' })
 
+const dropdownPerfilAbierto = ref(false)
+
 const fotoUsuario = ref(null)
 const fileInputPerfil = ref(null)
 
@@ -370,7 +405,7 @@ const uploadFotoPerfil = async (event) => {
 
   try {
     const id = localStorage.getItem('usuarioID')
-    const res = await axios.post(`http://localhost:3000/api/auth/${id}/foto`, formData, {
+    const res = await axios.post(`http://localhost:3007/api/auth/${id}/foto`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -399,7 +434,7 @@ const cambiarPassword = async () => {
   try {
     loadingPassword.value = true
     const userId = localStorage.getItem('usuarioID')
-    const res = await axios.post('http://localhost:3000/api/auth/cambiar-password', {
+    const res = await axios.post('http://localhost:3007/api/auth/cambiar-password', {
       id: userId,
       actual: formPassword.value.actual,
       nueva: formPassword.value.nueva
@@ -443,7 +478,7 @@ const fieldsEmergencia = [
 const guardarEmpleado = async () => {
   try {
     loading.value = true;
-    const res = await axios.post('http://localhost:3000/api/empleados/crear', form.value);
+    const res = await axios.post('http://localhost:3007/api/empleados/crear', form.value);
     
     // Verificamos si la respuesta fue exitosa
     if (res.status === 200 || res.data.success) {
@@ -459,7 +494,7 @@ const guardarEmpleado = async () => {
       };
 
       // Actualizar los contadores del Dashboard
-      const s = await axios.get('http://localhost:3000/api/stats/resumen');
+      const s = await axios.get('http://localhost:3007/api/stats/resumen');
       stats.value = s.data;
     }
   } catch (e) {
@@ -535,7 +570,7 @@ const calcularDiasRestantesTexto = (fechaNacimiento) => {
 
 const fetchCumpleaneros = async () => {
   try {
-    const listsRes = await axios.get(`http://localhost:3000/api/stats/dashboard-lists?mes=${mesCumpleaneros.value}`)
+    const listsRes = await axios.get(`http://localhost:3007/api/stats/dashboard-lists?mes=${mesCumpleaneros.value}`)
     // Actualizamos solo la lista de cumpleañeros
     dashboardLists.value.cumpleaneros = listsRes.data.cumpleaneros
   } catch (err) {
@@ -545,7 +580,7 @@ const fetchCumpleaneros = async () => {
 
 const fetchVencimientos = async () => {
   try {
-    const listsRes = await axios.get(`http://localhost:3000/api/stats/dashboard-lists?mesVencimiento=${mesVencimiento.value}`)
+    const listsRes = await axios.get(`http://localhost:3007/api/stats/dashboard-lists?mesVencimiento=${mesVencimiento.value}`)
     // Actualizamos solo la lista de vencimientos
     dashboardLists.value.vencimientos = listsRes.data.vencimientos
   } catch (err) {
@@ -566,21 +601,28 @@ onMounted(async () => {
     rolNombre.value = 'Empleado'
   }
   
-  const m = await axios.get(`http://localhost:3000/api/menu/${rolID.value}`)
-  menuUsuario.value = m.data
-  
-  const s = await axios.get('http://localhost:3000/api/stats/resumen')
-  stats.value = s.data
+  try {
+    const m = await axios.get(`http://localhost:3007/api/menu/${rolID.value}`)
+    menuUsuario.value = m.data
+  } catch (err) {
+    console.error("Error cargando menu", err)
+  }
 
   try {
-    const depRes = await axios.get('http://localhost:3000/api/departamentos/lista')
+    const s = await axios.get('http://localhost:3007/api/stats/resumen')
+    stats.value = s.data
+  } catch (err) {
+    console.error("Error cargando estadisticas resumen", err)
+  }
+  try {
+    const depRes = await axios.get('http://localhost:3007/api/departamentos/lista')
     departamentos.value = depRes.data
   } catch (err) {
     console.error("Error cargando departamentos", err)
   }
 
   try {
-    const listsRes = await axios.get(`http://localhost:3000/api/stats/dashboard-lists?mes=${mesCumpleaneros.value}&mesVencimiento=${mesVencimiento.value}`)
+    const listsRes = await axios.get(`http://localhost:3007/api/stats/dashboard-lists?mes=${mesCumpleaneros.value}&mesVencimiento=${mesVencimiento.value}`)
     dashboardLists.value = listsRes.data
   } catch (err) {
     console.error("Error cargando listas del dashboard", err)

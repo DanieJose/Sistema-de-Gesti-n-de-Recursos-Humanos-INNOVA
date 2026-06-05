@@ -73,7 +73,11 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div v-for="field in camposEmergencia" :key="field.id">
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
-              <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder" required
+              <select v-if="field.type === 'select'" v-model="form[field.id]" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                <option value="" disabled>Seleccione...</option>
+                <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <input v-else v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder" required
                 class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
             </div>
           </div>
@@ -84,7 +88,11 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div v-for="field in camposEmergencia2" :key="field.id">
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
-              <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder"
+              <select v-if="field.type === 'select'" v-model="form[field.id]" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                <option value="" disabled>Seleccione...</option>
+                <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+              <input v-else v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder"
                 class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
             </div>
           </div>
@@ -138,13 +146,13 @@ const camposLaborales = [
 ]
 
 const camposEmergencia = [
-  { id: 'emergencia_parentesco', label: 'Parentesco', type: 'text', placeholder: 'Madre, Padre, etc.' },
+  { id: 'emergencia_parentesco', label: 'Parentesco', type: 'select', options: ['Padre', 'Madre', 'Conyuge', 'Hermano(a)', 'Tio(a)', 'Otro (a)'] },
   { id: 'emergencia_nombre', label: 'Nombre Completo', type: 'text' },
   { id: 'emergencia_telefono', label: 'Teléfono Emergencia', type: 'text' }
 ]
 
 const camposEmergencia2 = [
-  { id: 'emergencia_parentesco_2', label: 'Parentesco', type: 'text', placeholder: 'Madre, Padre, etc.' },
+  { id: 'emergencia_parentesco_2', label: 'Parentesco', type: 'select', options: ['Padre', 'Madre', 'Conyuge', 'Hermano(a)', 'Tio(a)', 'Otro (a)'] },
   { id: 'emergencia_nombre_2', label: 'Nombre Completo', type: 'text' },
   { id: 'emergencia_telefono_2', label: 'Teléfono Emergencia', type: 'text' }
 ]
@@ -159,10 +167,10 @@ const formatDate = (dateStr) => {
 onMounted(async () => {
   const id = route.params.id
   try {
-    const resDep = await axios.get('http://localhost:3000/api/departamentos/lista')
+    const resDep = await axios.get('http://localhost:3007/api/departamentos/lista')
     departamentos.value = resDep.data
 
-    const res = await axios.get(`http://localhost:3000/api/empleados/${id}`)
+    const res = await axios.get(`http://localhost:3007/api/empleados/${id}`)
     const data = res.data
     form.value = {
       codigo_empleado: data.codigo_empleado || '',
@@ -203,7 +211,7 @@ const guardarEmpleado = async () => {
   try {
     loading.value = true
     const id = route.params.id
-    const res = await axios.put(`http://localhost:3000/api/empleados/${id}`, form.value)
+    const res = await axios.put(`http://localhost:3007/api/empleados/${id}`, form.value)
     
     alert('✅ ' + res.data.mensaje)
     

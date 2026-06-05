@@ -78,7 +78,7 @@ const creadorNombre = computed(() => {
 
 const creadorAvatar = computed(() => {
   if (props.ticket.creadorAvatar) return props.ticket.creadorAvatar;
-  if (props.ticket.empleado_foto) return `http://localhost:3000${props.ticket.empleado_foto}`;
+  if (props.ticket.empleado_foto) return `http://localhost:3007${props.ticket.empleado_foto}`;
   return null;
 })
 
@@ -89,8 +89,8 @@ const asignadoNombre = computed(() => {
 })
 
 const asignadoAvatar = computed(() => {
-  if (props.ticket.asignado_empleado_foto) return `http://localhost:3000${props.ticket.asignado_empleado_foto}`;
-  if (props.ticket.asignado_usuario_foto) return `http://localhost:3000${props.ticket.asignado_usuario_foto}`;
+  if (props.ticket.asignado_empleado_foto) return `http://localhost:3007${props.ticket.asignado_empleado_foto}`;
+  if (props.ticket.asignado_usuario_foto) return `http://localhost:3007${props.ticket.asignado_usuario_foto}`;
   return null;
 })
 

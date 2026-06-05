@@ -7,8 +7,11 @@
       </div>
       
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-        <div v-for="item in menuUsuario" :key="item.ruta">
-          <NuxtLink :to="item.ruta" 
+        <div v-for="(item, index) in menuUsuario" :key="item.ruta || index">
+          <div v-if="item.esCabecera" class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-6 mb-2 px-3">
+            {{ item.nombre }}
+          </div>
+          <NuxtLink v-else :to="item.ruta" 
             class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group"
             active-class="bg-blue-600 shadow-lg">
             <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
@@ -43,6 +46,15 @@
             <button v-if="activeTab === 'roles'" @click="abrirModalRol()" class="bg-purple-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs hover:bg-purple-700 transition-all shadow-lg shadow-purple-200 flex items-center gap-2">
               <span>+</span> Crear Rol
             </button>
+            <div class="flex items-center gap-4 bg-slate-50 py-2 px-4 rounded-2xl border border-slate-100">
+              <div class="text-right">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario Activo</p>
+                <p class="font-bold text-slate-800">{{ usuarioActual || 'Gerad Cole' }}</p>
+              </div>
+              <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                {{ usuarioActual ? usuarioActual.charAt(0).toUpperCase() : 'G' }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -285,6 +297,7 @@
       </div>
 
     </main>
+
   </div>
 </template>
 
@@ -295,6 +308,7 @@ import axios from 'axios'
 const rolID = ref(null)
 const rolNombre = ref('Cargando...')
 const menuUsuario = ref([])
+const usuarioActual = ref('')
 
 const activeTab = ref('usuarios')
 
@@ -321,7 +335,7 @@ const permisosForm = ref([])
 const cargarUsuarios = async () => {
   try {
     loadingUsuarios.value = true
-    const res = await axios.get('http://localhost:3000/api/usuarios')
+    const res = await axios.get('http://localhost:3007/api/usuarios')
     usuarios.value = res.data
   } catch (error) {
     console.error('Error cargando usuarios', error)
@@ -333,7 +347,7 @@ const cargarUsuarios = async () => {
 const cargarRoles = async () => {
   try {
     loadingRoles.value = true
-    const res = await axios.get('http://localhost:3000/api/roles')
+    const res = await axios.get('http://localhost:3007/api/roles')
     roles.value = res.data
   } catch (error) {
     console.error('Error cargando roles', error)
@@ -392,10 +406,10 @@ const guardarUsuario = async () => {
     }
 
     if (esEdicionUsuario.value) {
-      await axios.put(`http://localhost:3000/api/usuarios/${formUsuario.value.id}`, payload)
+      await axios.put(`http://localhost:3007/api/usuarios/${formUsuario.value.id}`, payload)
       alert('✅ Usuario actualizado exitosamente')
     } else {
-      await axios.post('http://localhost:3000/api/usuarios', payload)
+      await axios.post('http://localhost:3007/api/usuarios', payload)
       alert('✅ Usuario creado exitosamente')
     }
     cerrarModalUsuario()
@@ -413,7 +427,7 @@ const toggleEstado = async (usuario) => {
   if (!confirm(`¿Está seguro que desea ${accion} al usuario ${usuario.nombre}?`)) return
 
   try {
-    await axios.put(`http://localhost:3000/api/usuarios/${usuario.id}/estado`, {
+    await axios.put(`http://localhost:3007/api/usuarios/${usuario.id}/estado`, {
       estado: nuevoEstado
     })
     cargarUsuarios()
@@ -442,10 +456,10 @@ const cerrarModalRol = () => {
 const guardarRol = async () => {
   try {
     if (esEdicionRol.value) {
-      await axios.put(`http://localhost:3000/api/roles/${formRol.value.id}`, { nombre: formRol.value.nombre })
+      await axios.put(`http://localhost:3007/api/roles/${formRol.value.id}`, { nombre: formRol.value.nombre })
       alert('✅ Rol actualizado exitosamente')
     } else {
-      await axios.post('http://localhost:3000/api/roles', { nombre: formRol.value.nombre })
+      await axios.post('http://localhost:3007/api/roles', { nombre: formRol.value.nombre })
       alert('✅ Rol creado exitosamente')
     }
     cerrarModalRol()
@@ -460,7 +474,7 @@ const eliminarRol = async (rol) => {
   if (!confirm(`¿Está seguro que desea eliminar el rol "${rol.nombre}"? Esta acción puede afectar a los usuarios con este rol.`)) return
 
   try {
-    await axios.delete(`http://localhost:3000/api/roles/${rol.id}`)
+    await axios.delete(`http://localhost:3007/api/roles/${rol.id}`)
     alert('✅ Rol eliminado correctamente')
     cargarRoles()
   } catch (error) {
@@ -476,7 +490,7 @@ const abrirModalPermisos = async (rol) => {
   loadingPermisos.value = true
   
   try {
-    const res = await axios.get(`http://localhost:3000/api/roles/${rol.id}/permisos`)
+    const res = await axios.get(`http://localhost:3007/api/roles/${rol.id}/permisos`)
     permisosForm.value = res.data
   } catch (error) {
     console.error('Error al cargar permisos', error)
@@ -506,7 +520,7 @@ const toggleTodos = (permiso, valor) => {
 
 const guardarPermisos = async () => {
   try {
-    await axios.put(`http://localhost:3000/api/roles/${rolSeleccionado.value.id}/permisos`, {
+    await axios.put(`http://localhost:3007/api/roles/${rolSeleccionado.value.id}/permisos`, {
       permisos: permisosForm.value
     })
     alert('✅ Permisos actualizados exitosamente')
@@ -525,6 +539,7 @@ const logout = () => {
 
 onMounted(async () => {
   rolID.value = localStorage.getItem('usuarioRol') || 2
+  usuarioActual.value = localStorage.getItem('usuarioNombre') || 'Gerad Cole'
 
   if (rolID.value == 1) {
     rolNombre.value = 'Administrador IT'
@@ -535,7 +550,7 @@ onMounted(async () => {
   }
 
   try {
-    const m = await axios.get(`http://localhost:3000/api/menu/${rolID.value}`)
+    const m = await axios.get(`http://localhost:3007/api/menu/${rolID.value}`)
     menuUsuario.value = m.data
   } catch (e) {
     console.error('Error cargando menú', e)

@@ -17,6 +17,8 @@ const logsRoutes = require('./routes/logs');
 const rolesRoutes = require('./routes/roles');
 const usuariosRoutes = require('./routes/usuarios');
 const bibliotecaRoutes = require('./routes/biblioteca');
+const documentosLegalesRoutes = require('./routes/documentos-legales');
+const categoriasLegalesRoutes = require('./routes/categorias-legales');
 
 const app = express();
 
@@ -33,11 +35,11 @@ app.use(cors({
 
 // --- CONEXIÓN A LA BASE DE DATOS ---
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '',
-    database: process.env.DB_NAME || 'sistema_rrhh',
+    host: process.env.DB_HOST ?? 'localhost',
+    port: process.env.DB_PORT ?? 3306,
+    user: process.env.DB_USER ?? 'root',
+    password: process.env.DB_PASS ?? '',
+    database: process.env.DB_NAME ?? 'sistema_rrhh',
     multipleStatements: true
 });
 
@@ -65,6 +67,8 @@ app.use('/api/documentos', documentosRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/biblioteca', bibliotecaRoutes);
+app.use('/api/documentos-legales', documentosLegalesRoutes);
+app.use('/api/categorias-legales', categoriasLegalesRoutes);
 app.use('/api/logs', logsRoutes);
 
 // 1. OBTENER MENÚ DINÁMICO (Rutas corregidas)
@@ -73,28 +77,43 @@ app.get('/api/menu/:rol_id', (req, res) => {
     
     // MENÚ BASE
     let menu = [
-        { nombre: 'Dashboard', ruta: '/', icono: '🏠' },
-        { nombre: 'Tickets', ruta: '/tickets', icono: '🎫' }
+        { nombre: 'Dashboard', ruta: '/', icono: '🏠' }
     ];
 
-    // MÓDULOS DE RECURSOS HUMANOS (Super Admin y RRHH)
+    // MÓDULOS DE RECURSOS HUMANOS
     if (rol_id == 1 || rol_id == 2) {
+        menu.push({ nombre: 'RECURSOS HUMANOS', esCabecera: true });
         menu.push(
             { nombre: 'Empleados', ruta: '/empleados', icono: '👥' },
-            { nombre: 'Nuevo Empleado', ruta: '/empleados/nuevo', icono: '👤+' }, // RUTA EXACTA
+            { nombre: 'Nuevo Empleado', ruta: '/empleados/nuevo', icono: '👤+' },
             { nombre: 'Registrar Vacaciones', ruta: '/vacaciones', icono: '🏖️' },
-            { nombre: 'Departamentos', ruta: '/departamentos', icono: '🏢' },
             { nombre: 'Reportes', ruta: '/reportes', icono: '📊' },
-            { nombre: 'Control de Usuarios y Roles', ruta: '/admin/usuarios', icono: '🔐' }
+            { nombre: 'Departamentos', ruta: '/departamentos', icono: '🏢' }
         );
+        
+        // As per request, Gestión Manuales under RECURSOS HUMANOS
+        if (rol_id == 1) {
+            menu.push({ nombre: 'Gestión Manuales', ruta: '/admin/manuales', icono: '📚' });
+            menu.push({ nombre: 'Documentos Legales', ruta: '/documentos-legales', icono: '📁' });
+        }
     }
 
-    // MÓDULOS EXCLUSIVOS DE IT SUPER ADMIN
+    // MÓDULOS DE IT
+    let itItems = [];
+    
+    // Tickets is now under IT for everyone
+    itItems.push({ nombre: 'Tickets', ruta: '/tickets', icono: '🎫' });
+    
+    if (rol_id == 1 || rol_id == 2) {
+        itItems.push({ nombre: 'Control Usuarios y Roles', ruta: '/admin/usuarios', icono: '🔐' });
+    }
     if (rol_id == 1) {
-        menu.push(
-            { nombre: 'Gestión Manuales', ruta: '/admin/manuales', icono: '📚' },
-            { nombre: 'Logs de Sistema', ruta: '/admin/logs', icono: '📋' }
-        );
+        itItems.push({ nombre: 'Logs de Sistema', ruta: '/admin/logs', icono: '📋' });
+    }
+
+    if (itItems.length > 0) {
+        menu.push({ nombre: 'Departamento de IT', esCabecera: true });
+        menu = menu.concat(itItems);
     }
 
     res.json(menu);
@@ -116,6 +135,20 @@ app.get('/api/stats/resumen', (req, res) => {
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results[0]);
+    });
+});
+
+app.get('/api/stats/empleados-por-departamento', (req, res) => {
+    const sql = `
+        SELECT d.nombre as departamento, COUNT(e.id) as cantidad
+        FROM departamentos d
+        LEFT JOIN empleados e ON d.id = e.departamento_id AND e.estado = 1
+        GROUP BY d.id, d.nombre
+        ORDER BY cantidad DESC;
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
     });
 });
 
@@ -200,7 +233,7 @@ app.put('/api/notificaciones/leer/:usuario_id', (req, res) => {
     });
 });
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3007;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor RRHH Innova en: http://localhost:${PORT}`);
 });

@@ -4,14 +4,36 @@
       <div class="p-6 text-2xl font-bold border-b border-slate-700 tracking-tight text-blue-400 uppercase">
         RRHH Innova
       </div>
+      
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-        <NuxtLink to="/" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all">
-          <span>🏠</span> Dashboard
-        </NuxtLink>
-        <NuxtLink to="/empleados" class="flex items-center gap-3 p-3 rounded-xl bg-blue-600 shadow-lg">
-          <span>👥</span> Empleados
-        </NuxtLink>
+        <div v-for="(item, index) in menuUsuario" :key="item.ruta || index">
+          <div v-if="item.esCabecera" class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-6 mb-2 px-3">
+            {{ item.nombre }}
+          </div>
+          <button v-else-if="item.ruta === '/empleados/nuevo'" @click="abrirModalNuevo"
+             class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group">
+            <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
+            <span class="text-sm font-medium">{{ item.nombre }}</span>
+          </button>
+
+          <NuxtLink v-else :to="item.ruta" 
+            class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group"
+            active-class="bg-blue-600 shadow-lg">
+            <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
+            <span class="text-sm font-medium">{{ item.nombre }}</span>
+          </NuxtLink>
+        </div>
       </nav>
+
+      <div class="p-4 border-t border-slate-700 bg-slate-900/50">
+        <div class="mb-4 px-2 flex flex-col">
+          <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Nivel de Acceso</span>
+          <span class="text-xs font-bold text-blue-400">{{ rolNombre }}</span>
+        </div>
+        <button @click="logout" class="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all font-bold text-xs uppercase tracking-widest">
+          <span>🚪</span> Cerrar Sesión
+        </button>
+      </div>
     </aside>
 
     <main class="flex-1 ml-64 p-8">
@@ -25,17 +47,47 @@
             <button @click="abrirModalNuevo" class="bg-green-600 text-white px-6 py-3 rounded-xl font-black uppercase text-xs hover:bg-green-700 transition-all shadow-lg shadow-green-200">
               + Nuevo Empleado
             </button>
-            <div class="flex items-center gap-3 pl-6 border-l border-slate-200">
-              <div v-if="fotoUsuario" class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-slate-100">
-                <img :src="`http://localhost:3000${fotoUsuario}`" class="w-full h-full object-cover" />
+            <div class="relative">
+              <div @click="dropdownPerfilAbierto = !dropdownPerfilAbierto" class="flex items-center gap-3 pl-6 border-l border-slate-200 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-colors">
+                <div v-if="fotoUsuario" class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-slate-100">
+                  <img :src="`http://localhost:3007${fotoUsuario}`" class="w-full h-full object-cover" />
+                </div>
+                <div v-else class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-lg ring-2 ring-slate-100 uppercase">
+                  {{ nombreUsuario ? nombreUsuario.charAt(0) : 'U' }}
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Usuario Activo</span>
+                  <span class="text-base font-black text-slate-900 leading-tight">{{ nombreUsuario || 'Cargando...' }}</span>
+                </div>
               </div>
-              <div v-else class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-lg ring-2 ring-slate-100 uppercase">
-                {{ nombreUsuario ? nombreUsuario.charAt(0) : 'U' }}
+
+              <!-- Dropdown Menu -->
+              <div v-if="dropdownPerfilAbierto" class="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in slide-in-from-top-2 duration-200">
+                <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center gap-4">
+                  <div v-if="fotoUsuario" class="h-12 w-12 rounded-full flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm shrink-0">
+                    <img :src="`http://localhost:3007${fotoUsuario}`" class="w-full h-full object-cover" />
+                  </div>
+                  <div v-else class="h-12 w-12 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-xl ring-2 ring-white shadow-sm shrink-0 uppercase">
+                    {{ nombreUsuario ? nombreUsuario.charAt(0) : 'U' }}
+                  </div>
+                  <div>
+                    <p class="font-black text-slate-800 text-sm leading-tight">{{ nombreUsuario || 'Cargando...' }}</p>
+                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-0.5">{{ rolNombre || 'Cargando...' }}</p>
+                  </div>
+                </div>
+                <div class="p-2 space-y-1">
+                  <button @click="abrirModalPerfil(); dropdownPerfilAbierto = false" class="w-full text-left flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors group">
+                    <span class="text-lg group-hover:scale-110 transition-transform">👤</span>
+                    <span class="text-sm font-bold text-slate-700">Mi Perfil de Usuario</span>
+                  </button>
+                  <button @click="logout" class="w-full text-left flex items-center gap-3 p-3 hover:bg-red-50 rounded-xl transition-colors group">
+                    <span class="text-lg group-hover:scale-110 transition-transform">🚪</span>
+                    <span class="text-sm font-bold text-red-600">Cerrar Sesión</span>
+                  </button>
+                </div>
               </div>
-              <div class="flex flex-col">
-                <span class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Usuario Activo</span>
-                <span class="text-base font-black text-slate-900 leading-tight">{{ nombreUsuario || 'Cargando...' }}</span>
-              </div>
+              <!-- Overlay invisible para cerrar el dropdown si se hace click fuera -->
+              <div v-if="dropdownPerfilAbierto" @click="dropdownPerfilAbierto = false" class="fixed inset-0 z-40"></div>
             </div>
           </div>
         </div>
@@ -88,7 +140,7 @@
             <tr v-else v-for="emp in filteredEmpleados" :key="emp.id" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
               <td class="p-5 flex items-center gap-3">
                 <div class="h-10 w-10 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100 flex items-center justify-center">
-                  <img v-if="emp.foto" :src="`http://localhost:3000${emp.foto}`" alt="Foto" class="w-full h-full object-cover" />
+                  <img v-if="emp.foto" :src="`http://localhost:3007${emp.foto}`" alt="Foto" class="w-full h-full object-cover" />
                   <span v-else class="text-slate-400 font-bold text-sm">{{ emp.nombre.charAt(0) }}</span>
                 </div>
                 <div class="font-bold text-slate-800 text-sm">
@@ -96,7 +148,9 @@
                 </div>
               </td>
               <td class="p-5 font-bold text-slate-800">
-                {{ emp.nombre }} {{ emp.apellido }}
+                <NuxtLink :to="`/empleados/${emp.id}`" class="hover:text-blue-600 hover:underline transition-colors cursor-pointer">
+                  {{ emp.nombre }} {{ emp.apellido }}
+                </NuxtLink>
               </td>
               <td class="p-5 text-sm text-slate-600">
                 {{ emp.identidad }}
@@ -200,7 +254,11 @@
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div v-for="field in camposEmergencia" :key="field.id">
                   <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
-                  <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder" required
+                  <select v-if="field.type === 'select'" v-model="form[field.id]" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                    <option value="" disabled>Seleccione...</option>
+                    <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                  </select>
+                  <input v-else v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder" required
                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
                 </div>
               </div>
@@ -211,7 +269,11 @@
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div v-for="field in camposEmergencia2" :key="field.id">
                   <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">{{ field.label }}</label>
-                  <input v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder"
+                  <select v-if="field.type === 'select'" v-model="form[field.id]" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                    <option value="" disabled>Seleccione...</option>
+                    <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                  </select>
+                  <input v-else v-model="form[field.id]" :type="field.type" :placeholder="field.placeholder"
                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
                 </div>
               </div>
@@ -230,12 +292,128 @@
         </div>
       </div>
     </div>
+    
+    <!-- Modal Perfil -->
+    <div v-if="modalAbiertoPerfil" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+      <div class="bg-white w-full max-w-md overflow-hidden rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div class="p-6 border-b bg-white flex justify-between items-center">
+          <h2 class="text-2xl font-black text-slate-800 uppercase tracking-tight">👤 Perfil de Usuario</h2>
+          <button @click="cerrarModalPerfil" class="text-slate-400 hover:text-red-500 transition text-2xl">&times;</button>
+        </div>
+
+        <form @submit.prevent="cambiarPassword" class="p-8 space-y-6">
+          <div class="mb-6 flex flex-col items-center">
+            <div class="relative group cursor-pointer" @click="triggerFileInputPerfil">
+              <div v-if="fotoUsuario" class="h-20 w-20 rounded-full flex items-center justify-center overflow-hidden ring-4 ring-slate-100 shadow-lg mb-4">
+                <img :src="`http://localhost:3007${fotoUsuario}`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="h-20 w-20 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-black text-3xl ring-4 ring-slate-100 uppercase mb-4 shadow-lg">
+                {{ nombreUsuario ? nombreUsuario.charAt(0) : 'U' }}
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full bg-black/50 mb-4">
+                <span class="text-white text-[10px] font-bold px-2 py-1 text-center">Cambiar<br>Foto</span>
+              </div>
+              <input type="file" ref="fileInputPerfil" class="hidden" accept="image/*" @change="uploadFotoPerfil" />
+            </div>
+            <h3 class="text-xl font-black text-slate-900">{{ nombreUsuario }}</h3>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{{ rolNombre }}</p>
+          </div>
+
+          <div>
+            <h3 class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-4 border-b pb-2">Seguridad - Cambiar Contraseña</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contraseña Actual</label>
+                <input v-model="formPassword.actual" type="password" required class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nueva Contraseña</label>
+                <input v-model="formPassword.nueva" type="password" required class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Confirmar Contraseña</label>
+                <input v-model="formPassword.confirmar" type="password" required class="w-full p-3 bg-slate-50 border rounded-xl outline-none focus:border-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t">
+            <button type="button" @click="cerrarModalPerfil" class="px-6 py-3 text-slate-400 font-bold uppercase text-xs">Cancelar</button>
+            <button type="submit" :disabled="loadingPassword" class="px-8 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs shadow-lg shadow-blue-200">
+              {{ loadingPassword ? 'Actualizando...' : 'Actualizar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import axios from 'axios'
 import { ref, computed, onMounted } from 'vue'
+
+// Lógica Modal Perfil
+const dropdownPerfilAbierto = ref(false)
+const modalAbiertoPerfil = ref(false)
+const loadingPassword = ref(false)
+const formPassword = ref({ actual: '', nueva: '', confirmar: '' })
+const fileInputPerfil = ref(null)
+
+const triggerFileInputPerfil = () => {
+  fileInputPerfil.value.click()
+}
+
+const uploadFotoPerfil = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('foto', file)
+
+  try {
+    const id = localStorage.getItem('usuarioID')
+    const res = await axios.post(`http://localhost:3007/api/auth/${id}/foto`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    fotoUsuario.value = res.data.fotoUrl
+    localStorage.setItem('usuarioFoto', res.data.fotoUrl)
+    alert('✅ ' + res.data.mensaje)
+  } catch (err) {
+    console.error("Error al subir la foto:", err)
+    alert('❌ Error al subir la foto')
+  }
+}
+
+const abrirModalPerfil = () => { modalAbiertoPerfil.value = true }
+const cerrarModalPerfil = () => {
+  modalAbiertoPerfil.value = false
+  formPassword.value = { actual: '', nueva: '', confirmar: '' }
+}
+
+const cambiarPassword = async () => {
+  if (formPassword.value.nueva !== formPassword.value.confirmar) {
+    alert('❌ Las contraseñas nuevas no coinciden')
+    return
+  }
+  try {
+    loadingPassword.value = true
+    const userId = localStorage.getItem('usuarioID')
+    const res = await axios.put(`http://localhost:3007/api/auth/${userId}/password`, {
+      actual: formPassword.value.actual,
+      nueva: formPassword.value.nueva
+    })
+    alert('✅ ' + res.data.mensaje)
+    cerrarModalPerfil()
+  } catch (err) {
+    alert('❌ ' + (err.response?.data?.error || 'Error al cambiar contraseña'))
+  } finally {
+    loadingPassword.value = false
+  }
+}
 
 const listaEmpleados = ref([])
 const searchQuery = ref('')
@@ -245,6 +423,12 @@ const loadingGuardar = ref(false)
 const departamentos = ref([])
 const nombreUsuario = ref('')
 const fotoUsuario = ref(null)
+
+const rolID = ref(null)
+const rolNombre = ref('Cargando...')
+const menuUsuario = ref([])
+
+const logout = () => { localStorage.clear(); navigateTo('/login') }
 
 const obtenerNombreDepartamento = (id) => {
   if (!id) return 'N/A'
@@ -277,13 +461,13 @@ const camposLaborales = [
 ]
 
 const camposEmergencia = [
-  { id: 'emergencia_parentesco', label: 'Parentesco', type: 'text', placeholder: 'Madre, Padre, etc.' },
+  { id: 'emergencia_parentesco', label: 'Parentesco', type: 'select', options: ['Padre', 'Madre', 'Conyuge', 'Hermano(a)', 'Tio(a)', 'Otro (a)'] },
   { id: 'emergencia_nombre', label: 'Nombre Completo', type: 'text' },
   { id: 'emergencia_telefono', label: 'Teléfono Emergencia', type: 'text' }
 ]
 
 const camposEmergencia2 = [
-  { id: 'emergencia_parentesco_2', label: 'Parentesco', type: 'text', placeholder: 'Madre, Padre, etc.' },
+  { id: 'emergencia_parentesco_2', label: 'Parentesco', type: 'select', options: ['Padre', 'Madre', 'Conyuge', 'Hermano(a)', 'Tio(a)', 'Otro (a)'] },
   { id: 'emergencia_nombre_2', label: 'Nombre Completo', type: 'text' },
   { id: 'emergencia_telefono_2', label: 'Teléfono Emergencia', type: 'text' }
 ]
@@ -310,7 +494,7 @@ const filteredEmpleados = computed(() => {
 
 const cargarEmpleados = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/empleados/lista', {
+    const res = await axios.get('http://localhost:3007/api/empleados/lista', {
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
@@ -342,7 +526,7 @@ const cerrarModalNuevo = () => {
 const guardarEmpleado = async () => {
   try {
     loadingGuardar.value = true
-    const res = await axios.post('http://localhost:3000/api/empleados/crear', form.value)
+    const res = await axios.post('http://localhost:3007/api/empleados/crear', form.value)
     
     alert('✅ ' + res.data.mensaje)
     
@@ -359,10 +543,26 @@ const guardarEmpleado = async () => {
 onMounted(async () => {
   nombreUsuario.value = localStorage.getItem('usuarioNombre') || 'Invitado'
   fotoUsuario.value = localStorage.getItem('usuarioFoto') || null
+  rolID.value = localStorage.getItem('usuarioRol') || 2
+  
+  if (rolID.value == 1) {
+    rolNombre.value = 'Administrador IT'
+  } else if (rolID.value == 2) {
+    rolNombre.value = 'Recursos Humanos'
+  } else {
+    rolNombre.value = 'Empleado'
+  }
+  
+  try {
+    const m = await axios.get(`http://localhost:3007/api/menu/${rolID.value}`)
+    menuUsuario.value = m.data
+  } catch (err) {
+    console.error("Error cargando menu", err)
+  }
 
   await cargarEmpleados()
   try {
-    const res = await axios.get('http://localhost:3000/api/departamentos/lista')
+    const res = await axios.get('http://localhost:3007/api/departamentos/lista')
     departamentos.value = res.data
   } catch (error) {
     console.error("Error cargando departamentos:", error)

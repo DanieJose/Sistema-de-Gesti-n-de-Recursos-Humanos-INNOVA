@@ -1,0 +1,568 @@
+<template>
+  <div class="min-h-screen bg-slate-900 p-8 font-sans">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center mb-12 gap-4">
+      <div>
+        <NuxtLink to="/" class="text-blue-400 text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-2 mb-4">
+          ⬅️ Volver al Inicio
+        </NuxtLink>
+        <h1 class="text-5xl font-black text-white tracking-tighter uppercase">Archivero <span class="text-amber-500">Legal</span></h1>
+        <p class="text-slate-400 mt-2 font-medium italic">Repositorio seguro de documentos legales y normativas.</p>
+      </div>
+      <div class="flex gap-4 items-center">
+        <button @click="abrirModal" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold uppercase text-xs tracking-widest transition-colors flex items-center gap-2 shadow-lg shadow-amber-900/20">
+          <span>➕</span> Subir Documento
+        </button>
+        <div class="bg-slate-800 p-4 rounded-3xl border border-white/5">
+          <span class="text-3xl">⚖️</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto mb-10">
+      <input v-model="search" type="text" placeholder="Buscar documento por título, categoría o descripción..." 
+        class="w-full bg-slate-800 border border-white/10 p-5 rounded-2xl text-white outline-none focus:border-amber-500 transition-all shadow-2xl">
+    </div>
+
+    <div v-if="cargando" class="text-center py-20 text-slate-500">
+      <p class="text-xl italic font-medium">Accediendo al archivero...</p>
+    </div>
+
+    <div v-else class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-for="doc in documentosFiltrados" :key="doc.id" 
+        class="bg-white rounded-3xl overflow-hidden shadow-xl group hover:translate-y-[-5px] transition-all duration-300 relative">
+        <div class="h-3 bg-amber-600"></div>
+        
+        <!-- Botones Acción -->
+        <div class="absolute top-6 right-6 flex gap-3">
+          <button @click="abrirModalEdicion(doc)" class="text-slate-300 hover:text-blue-500 transition-colors" title="Editar documento">
+            ✏️
+          </button>
+          <button @click="eliminarDocumento(doc.id)" class="text-slate-300 hover:text-red-500 transition-colors" title="Eliminar documento">
+             🗑️
+          </button>
+        </div>
+
+        <div class="p-8">
+          <div class="flex justify-between items-start mb-4 pr-6">
+            <span class="px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase rounded-full tracking-widest border border-amber-200">
+              {{ doc.categoria || 'General' }}
+            </span>
+          </div>
+          <h3 class="text-xl font-black text-slate-800 mb-2">{{ doc.titulo }}</h3>
+          <p class="text-slate-500 text-sm leading-relaxed mb-4 italic line-clamp-3">{{ doc.descripcion || 'Sin descripción' }}</p>
+          
+          <div class="flex justify-between items-center text-xs text-slate-400 font-medium mb-6">
+            <span>Subido: {{ new Date(doc.fecha_creacion).toLocaleDateString() }}</span>
+            <span v-if="doc.creadoPorNombre">Por: {{ doc.creadoPorNombre }}</span>
+          </div>
+
+          <div class="flex flex-col gap-2 mb-2">
+            <!-- Legacy File -->
+            <button v-if="doc.archivo && (!doc.archivos || doc.archivos.length === 0)" @click="descargarUrl(doc.archivo)" 
+              class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-amber-600 transition-colors flex items-center justify-center gap-3">
+              <span>📥</span> Descargar (Legacy) <span class="text-[10px] text-slate-400">{{ doc.tamano }}</span>
+            </button>
+            
+            <!-- Multiple Files -->
+            <div v-for="(arch, idx) in doc.archivos" :key="'arch-'+arch.id" class="flex flex-col gap-1">
+              <button @click="descargarUrl(arch.archivo_url)" 
+                class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-amber-600 transition-colors flex items-center justify-center gap-3">
+                <span>📥</span> Archivo {{ idx + 1 }} <span class="text-[10px] text-slate-400">{{ arch.tamano }}</span>
+              </button>
+            </div>
+
+            <!-- Legacy Link -->
+            <a v-if="doc.link_web && (!doc.links || doc.links.length === 0)" :href="doc.link_web" target="_blank"
+              class="w-full py-3 bg-slate-800 text-slate-300 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-amber-500 hover:text-white transition-colors flex items-center justify-center gap-3">
+              <span>🔗</span> Link (Legacy)
+            </a>
+
+            <!-- Multiple Links -->
+            <div v-for="(l, idx) in doc.links" :key="'link-'+l.id" class="flex flex-col gap-1">
+              <a :href="l.link_url" target="_blank"
+                class="w-full py-3 bg-slate-800 text-slate-300 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-amber-500 hover:text-white transition-colors flex items-center justify-center gap-3">
+                <span>🔗</span> Link {{ idx + 1 }}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="!cargando && documentosFiltrados.length === 0" class="text-center py-20 text-slate-500 bg-slate-800/50 rounded-3xl border border-white/5 max-w-6xl mx-auto">
+      <span class="text-6xl mb-4 block opacity-50">🗄️</span>
+      <p class="text-xl italic font-medium">El archivero está vacío o no hay resultados.</p>
+    </div>
+
+    <!-- Modal para subir documento -->
+    <div v-if="mostrarModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+        <div class="bg-slate-900 p-6 flex justify-between items-center">
+          <h2 class="text-white font-black text-xl tracking-tighter uppercase flex items-center gap-2">
+            <span class="text-amber-500">{{ isEditing ? '✏️' : '➕' }}</span> {{ isEditing ? 'Editar Registro' : 'Nuevo Registro' }}
+          </h2>
+          <button @click="cerrarModal" class="text-slate-400 hover:text-white transition-colors">
+            ❌
+          </button>
+        </div>
+        
+        <form @submit.prevent="subirDocumento" class="p-8 overflow-y-auto max-h-[75vh]">
+          <div class="mb-5">
+            <label class="block text-slate-700 text-xs font-bold uppercase tracking-widest mb-2">Título *</label>
+            <input v-model="form.titulo" type="text" required
+              class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-slate-800 outline-none focus:border-amber-500 focus:bg-white transition-all">
+          </div>
+          
+          <div class="mb-5">
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-slate-700 text-xs font-bold uppercase tracking-widest">Categoría</label>
+              <button type="button" @click="abrirModalCategorias" class="text-[10px] text-amber-600 hover:text-amber-800 font-bold underline">
+                ⚙️ Gestionar Categorías
+              </button>
+            </div>
+            <select v-model="form.categoria" 
+              class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-slate-800 outline-none focus:border-amber-500 focus:bg-white transition-all">
+              <option v-for="cat in listaCategorias" :key="cat.id" :value="cat.nombre">{{ cat.nombre }}</option>
+              <option v-if="listaCategorias.length === 0" value="General">General</option>
+            </select>
+          </div>
+
+          <div class="mb-5">
+            <label class="block text-slate-700 text-xs font-bold uppercase tracking-widest mb-2">Descripción</label>
+            <textarea v-model="form.descripcion" rows="3"
+              class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-slate-800 outline-none focus:border-amber-500 focus:bg-white transition-all"></textarea>
+          </div>
+
+          <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div class="flex justify-between items-center mb-3">
+              <label class="block text-slate-700 text-xs font-bold uppercase tracking-widest">Archivos</label>
+              <button type="button" @click="agregarInputArchivo" class="text-[10px] bg-amber-100 text-amber-700 hover:bg-amber-200 px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors">
+                + Agregar Archivo
+              </button>
+            </div>
+            
+            <!-- Archivos Existentes (Edición) -->
+            <div v-if="isEditing" class="space-y-2 mb-3">
+              <div v-for="arch in form.archivosExistentes" :key="arch.id" class="flex justify-between items-center bg-white p-2 rounded border border-slate-200 text-xs text-slate-600">
+                <span class="truncate pr-2">Archivo {{ arch.id }} ({{ arch.tamano }})</span>
+                <button type="button" @click="marcarArchivoParaEliminar(arch.id)" class="text-red-500 hover:text-red-700" title="Eliminar archivo">❌</button>
+              </div>
+            </div>
+
+            <!-- Nuevos Archivos -->
+            <div class="space-y-2">
+              <div v-for="(fileInput, index) in form.archivosInputs" :key="fileInput.id" class="flex items-center gap-2">
+                <input type="file" @change="(e) => handleMultipleFileChange(e, index)" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  class="flex-1 text-sm text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 transition-all cursor-pointer">
+                <button v-if="form.archivosInputs.length > 1 || isEditing" type="button" @click="removerInputArchivo(index)" class="text-red-500 hover:text-red-700 text-sm">❌</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div class="flex justify-between items-center mb-3">
+              <label class="block text-slate-700 text-xs font-bold uppercase tracking-widest">Links Web</label>
+              <button type="button" @click="agregarInputLink" class="text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-bold uppercase tracking-widest transition-colors">
+                + Agregar Link
+              </button>
+            </div>
+            <div class="space-y-2">
+              <div v-for="(linkObj, index) in form.linksInputs" :key="linkObj.id" class="flex items-center gap-2">
+                <input v-model="linkObj.url" type="url" placeholder="https://ejemplo.com"
+                  class="flex-1 bg-white border border-slate-200 p-2 rounded-xl text-sm text-slate-800 outline-none focus:border-amber-500 transition-all">
+                <button v-if="form.linksInputs.length > 1 || isEditing" type="button" @click="removerInputLink(index)" class="text-red-500 hover:text-red-700 text-sm">❌</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-8 flex items-center gap-2" v-if="!isEditing">
+            <input type="checkbox" id="seguirAgregando" v-model="seguirAgregando" class="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+            <label for="seguirAgregando" class="text-sm font-bold text-slate-700 cursor-pointer">Guardar y seguir agregando</label>
+          </div>
+
+          <div class="flex gap-4">
+            <button type="button" @click="cerrarModal" 
+              class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-slate-200 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" :disabled="subiendo"
+              class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-slate-200 transition-colors disabled:opacity-50">
+              {{ subiendo ? (isEditing ? 'Actualizando...' : 'Subiendo...') : (isEditing ? 'Actualizar' : 'Guardar') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Gestionar Categorías -->
+    <div v-if="mostrarModalCategorias" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
+        <div class="bg-slate-800 p-5 flex justify-between items-center">
+          <h2 class="text-white font-black text-lg tracking-tighter uppercase flex items-center gap-2">
+            ⚙️ Categorías
+          </h2>
+          <button @click="cerrarModalCategorias" class="text-slate-400 hover:text-white transition-colors">
+            ❌
+          </button>
+        </div>
+        
+        <div class="p-6">
+          <div class="flex gap-2 mb-6">
+            <input v-model="nuevaCategoria" type="text" placeholder="Nueva categoría..."
+              class="flex-1 bg-slate-50 border border-slate-200 p-2 rounded-xl text-sm outline-none focus:border-amber-500">
+            <button @click="agregarCategoria" :disabled="!nuevaCategoria.trim()"
+              class="bg-slate-900 text-white px-4 rounded-xl text-sm font-bold hover:bg-slate-800 transition disabled:opacity-50">
+              Añadir
+            </button>
+          </div>
+
+          <div class="max-h-60 overflow-y-auto pr-2 space-y-2">
+            <div v-if="listaCategorias.length === 0" class="text-center text-slate-400 text-sm italic py-4">
+              No hay categorías.
+            </div>
+            <div v-for="cat in listaCategorias" :key="cat.id" class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 group">
+              <div v-if="editandoId === cat.id" class="flex-1 flex gap-2 mr-2">
+                <input v-model="editNombre" type="text" class="w-full bg-white border border-slate-300 p-1 rounded text-sm outline-none focus:border-blue-500">
+                <button @click="guardarEdicionCategoria(cat.id)" class="text-green-600 hover:text-green-800">✅</button>
+                <button @click="cancelarEdicion" class="text-slate-400 hover:text-slate-600">❌</button>
+              </div>
+              <div v-else class="flex-1 flex justify-between items-center">
+                <span class="text-sm font-bold text-slate-700">{{ cat.nombre }}</span>
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-3">
+                  <button @click="iniciarEdicion(cat)" class="text-blue-500 hover:text-blue-700" title="Editar">✏️</button>
+                  <button @click="eliminarCategoria(cat.id)" class="text-red-400 hover:text-red-600" title="Eliminar">🗑️</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+
+const config = useRuntimeConfig()
+const search = ref('')
+const listaDocumentos = ref([])
+const listaCategorias = ref([])
+const cargando = ref(true)
+const mostrarModal = ref(false)
+const subiendo = ref(false)
+const isEditing = ref(false)
+const editDocumentoId = ref(null)
+const seguirAgregando = ref(false)
+
+// Estados para Modal Categorías
+const mostrarModalCategorias = ref(false)
+const nuevaCategoria = ref('')
+const editandoId = ref(null)
+const editNombre = ref('')
+
+const generarIdUnico = () => Math.random().toString(36).substr(2, 9)
+
+const form = ref({
+  titulo: '',
+  descripcion: '',
+  categoria: 'General',
+  archivosInputs: [{ id: generarIdUnico(), file: null }],
+  archivosExistentes: [],
+  archivosEliminar: [],
+  linksInputs: [{ id: generarIdUnico(), url: '' }]
+})
+
+const resetForm = () => {
+  form.value = {
+    titulo: '',
+    descripcion: '',
+    categoria: form.value.categoria,
+    archivosInputs: [{ id: generarIdUnico(), file: null }],
+    archivosExistentes: [],
+    archivosEliminar: [],
+    linksInputs: [{ id: generarIdUnico(), url: '' }]
+  }
+}
+
+const agregarInputArchivo = () => {
+  form.value.archivosInputs.push({ id: generarIdUnico(), file: null })
+}
+
+const removerInputArchivo = (index) => {
+  form.value.archivosInputs.splice(index, 1)
+}
+
+const handleMultipleFileChange = (e, index) => {
+  if (e.target.files.length > 0) {
+    form.value.archivosInputs[index].file = e.target.files[0]
+  } else {
+    form.value.archivosInputs[index].file = null
+  }
+}
+
+const marcarArchivoParaEliminar = (id) => {
+  form.value.archivosEliminar.push(id)
+  form.value.archivosExistentes = form.value.archivosExistentes.filter(a => a.id !== id)
+}
+
+const agregarInputLink = () => {
+  form.value.linksInputs.push({ id: generarIdUnico(), url: '' })
+}
+
+const removerInputLink = (index) => {
+  form.value.linksInputs.splice(index, 1)
+}
+
+const cargarDocumentos = async () => {
+  try {
+    const res = await fetch(`${config.public.apiBase}/api/documentos-legales`)
+    if (res.ok) {
+      listaDocumentos.value = await res.json()
+    }
+  } catch (error) {
+    console.error('Error cargando documentos legales:', error)
+  }
+}
+
+const cargarCategorias = async () => {
+  try {
+    const res = await fetch(`${config.public.apiBase}/api/categorias-legales`)
+    if (res.ok) {
+      listaCategorias.value = await res.json()
+      if (listaCategorias.value.length > 0 && !listaCategorias.value.find(c => c.nombre === form.value.categoria)) {
+        form.value.categoria = listaCategorias.value[0].nombre;
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando categorías legales:', error)
+  }
+}
+
+onMounted(async () => {
+  cargando.value = true
+  await Promise.all([cargarDocumentos(), cargarCategorias()])
+  cargando.value = false
+})
+
+const documentosFiltrados = computed(() => {
+  const query = search.value.toLowerCase()
+  return listaDocumentos.value.filter(doc => 
+    doc.titulo.toLowerCase().includes(query) || 
+    (doc.categoria && doc.categoria.toLowerCase().includes(query)) ||
+    (doc.descripcion && doc.descripcion.toLowerCase().includes(query))
+  )
+})
+
+const descargarUrl = (url) => {
+  if (url) {
+    window.open(`${config.public.apiBase}${url}`, '_blank');
+  }
+}
+
+const abrirModal = () => {
+  isEditing.value = false
+  editDocumentoId.value = null
+  resetForm()
+  mostrarModal.value = true
+}
+
+const abrirModalEdicion = (doc) => {
+  isEditing.value = true
+  editDocumentoId.value = doc.id
+  
+  // Prepare existing files and links
+  let archivosExistentes = doc.archivos ? [...doc.archivos] : []
+  let linksInputs = doc.links && doc.links.length > 0 
+    ? doc.links.map(l => ({ id: generarIdUnico(), url: l.link_url })) 
+    : []
+    
+  // Handle legacy single link
+  if (doc.link_web && (!doc.links || doc.links.length === 0)) {
+    linksInputs.push({ id: generarIdUnico(), url: doc.link_web })
+  }
+  
+  // If no links, add one empty input
+  if (linksInputs.length === 0) {
+     linksInputs.push({ id: generarIdUnico(), url: '' })
+  }
+
+  form.value = {
+    titulo: doc.titulo,
+    descripcion: doc.descripcion || '',
+    categoria: doc.categoria || 'General',
+    archivosInputs: [{ id: generarIdUnico(), file: null }],
+    archivosExistentes: archivosExistentes,
+    archivosEliminar: [],
+    linksInputs: linksInputs
+  }
+  mostrarModal.value = true
+}
+
+const cerrarModal = () => {
+  mostrarModal.value = false
+}
+
+const subirDocumento = async () => {
+  const linksValidos = form.value.linksInputs.map(l => l.url.trim()).filter(url => url !== '')
+  const archivosNuevos = form.value.archivosInputs.filter(inp => inp.file !== null)
+  
+  // Validation: Must have at least one file (new or existing) OR one link
+  const totalFiles = archivosNuevos.length + (form.value.archivosExistentes ? form.value.archivosExistentes.length : 0);
+  
+  if (totalFiles === 0 && linksValidos.length === 0) {
+    alert('Debe subir al menos un archivo o ingresar un link.')
+    return
+  }
+
+  subiendo.value = true
+  const formData = new FormData()
+  formData.append('titulo', form.value.titulo)
+  formData.append('descripcion', form.value.descripcion)
+  formData.append('categoria', form.value.categoria)
+  
+  // Append multiple files
+  archivosNuevos.forEach(inp => {
+    formData.append('archivos', inp.file)
+  })
+  
+  // Append links as JSON
+  formData.append('links', JSON.stringify(linksValidos))
+  
+  // Append files to delete (for edit mode)
+  if (isEditing.value) {
+     formData.append('archivosEliminar', JSON.stringify(form.value.archivosEliminar))
+  }
+  
+  let userId = 1;
+  try {
+    const authUser = JSON.parse(localStorage.getItem('auth_user') || '{}')
+    if (authUser && authUser.id) {
+      userId = authUser.id;
+    }
+  } catch(e) {}
+  formData.append('creado_por', userId)
+
+  try {
+    let url = `${config.public.apiBase}/api/documentos-legales`
+    let method = 'POST'
+    
+    if (isEditing.value) {
+      url = `${config.public.apiBase}/api/documentos-legales/${editDocumentoId.value}`
+      method = 'PUT'
+    }
+
+    const res = await fetch(url, {
+      method: method,
+      body: formData
+    })
+    
+    if (res.ok) {
+      if (!isEditing.value && seguirAgregando.value) {
+        resetForm()
+        alert('Documento guardado con éxito. Puede continuar agregando otro.')
+      } else {
+        cerrarModal()
+      }
+      await cargarDocumentos()
+    } else {
+      const errorData = await res.json()
+      alert(`Error al ${isEditing.value ? 'actualizar' : 'subir'}: ` + (errorData.error || 'Desconocido'))
+    }
+  } catch (error) {
+    console.error('Error:', error)
+    alert('Error de conexión al guardar documento.')
+  } finally {
+    subiendo.value = false
+  }
+}
+
+const eliminarDocumento = async (id) => {
+  if (!confirm('¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer y borrará todos sus archivos y links.')) return
+
+  try {
+    const res = await fetch(`${config.public.apiBase}/api/documentos-legales/${id}`, {
+      method: 'DELETE'
+    })
+    
+    if (res.ok) {
+      await cargarDocumentos()
+    } else {
+      alert('Error al eliminar el documento.')
+    }
+  } catch (error) {
+    console.error('Error al eliminar:', error)
+  }
+}
+
+// --- GESTIÓN DE CATEGORÍAS ---
+const abrirModalCategorias = () => {
+  mostrarModalCategorias.value = true
+}
+
+const cerrarModalCategorias = () => {
+  mostrarModalCategorias.value = false
+  nuevaCategoria.value = ''
+  cancelarEdicion()
+}
+
+const agregarCategoria = async () => {
+  if (!nuevaCategoria.value.trim()) return
+  try {
+    const res = await fetch(`${config.public.apiBase}/api/categorias-legales`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: nuevaCategoria.value.trim() })
+    })
+    if (res.ok) {
+      nuevaCategoria.value = ''
+      await cargarCategorias()
+    } else {
+      const err = await res.json()
+      alert(err.error || 'Error al agregar')
+    }
+  } catch(e) {
+    console.error(e)
+  }
+}
+
+const eliminarCategoria = async (id) => {
+  if(!confirm('¿Eliminar esta categoría?')) return
+  try {
+    const res = await fetch(`${config.public.apiBase}/api/categorias-legales/${id}`, { method: 'DELETE' })
+    if (res.ok) await cargarCategorias()
+  } catch(e) {
+    console.error(e)
+  }
+}
+
+const iniciarEdicion = (cat) => {
+  editandoId.value = cat.id
+  editNombre.value = cat.nombre
+}
+
+const cancelarEdicion = () => {
+  editandoId.value = null
+  editNombre.value = ''
+}
+
+const guardarEdicionCategoria = async (id) => {
+  if (!editNombre.value.trim()) return
+  try {
+    const res = await fetch(`${config.public.apiBase}/api/categorias-legales/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: editNombre.value.trim() })
+    })
+    if (res.ok) {
+      cancelarEdicion()
+      await cargarCategorias()
+    } else {
+       const err = await res.json()
+       alert(err.error || 'Error al actualizar')
+    }
+  } catch(e) {
+    console.error(e)
+  }
+}
+</script>

@@ -157,7 +157,7 @@ const getCategoryCount = (nombre) => {
 
 const fetchCategorias = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/tickets/categorias/lista')
+    const res = await axios.get('http://localhost:3007/api/tickets/categorias/lista')
     categoriasLista.value = res.data
     emit('categorias-actualizadas', res.data)
   } catch (error) {
@@ -170,7 +170,7 @@ const agregarCategoria = async () => {
   if (!nombre || !nombre.trim()) return
 
   try {
-    const res = await axios.post('http://localhost:3000/api/tickets/categorias', { nombre: nombre.trim() })
+    const res = await axios.post('http://localhost:3007/api/tickets/categorias', { nombre: nombre.trim() })
     // Recargar para obtener el estado activa por defecto o hacer push con activa: 1
     fetchCategorias()
   } catch (error) {
@@ -188,7 +188,7 @@ const editarCategoria = async (cat) => {
   if (!nuevoNombre || !nuevoNombre.trim() || nuevoNombre === cat.nombre) return
 
   try {
-    await axios.put(`http://localhost:3000/api/tickets/categorias/${cat.id}`, {
+    await axios.put(`http://localhost:3007/api/tickets/categorias/${cat.id}`, {
       nombre: nuevoNombre.trim(),
       activa: cat.activa
     })
@@ -202,7 +202,7 @@ const editarCategoria = async (cat) => {
 const toggleCategoria = async (cat) => {
   const nuevoEstado = !cat.activa
   try {
-    await axios.put(`http://localhost:3000/api/tickets/categorias/${cat.id}`, {
+    await axios.put(`http://localhost:3007/api/tickets/categorias/${cat.id}`, {
       nombre: cat.nombre,
       activa: nuevoEstado
     })

@@ -83,7 +83,7 @@ const categoriasLista = ref([])
 
 onMounted(async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/tickets/categorias/lista')
+    const res = await axios.get('http://localhost:3007/api/tickets/categorias/lista')
     categoriasLista.value = res.data.filter(c => c.activa)
     if (categoriasLista.value.length > 0 && !categoriasLista.value.find(c => c.nombre === categoria.value)) {
       categoria.value = categoriasLista.value[0].nombre
@@ -118,7 +118,7 @@ const crearTicket = async () => {
       formData.append('archivo', archivoTicket.value)
     }
 
-    const res = await axios.post('http://localhost:3000/api/tickets/crear', formData, {
+    const res = await axios.post('http://localhost:3007/api/tickets/crear', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 

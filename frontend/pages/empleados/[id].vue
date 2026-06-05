@@ -6,8 +6,11 @@
       </div>
       
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-        <div v-for="item in menuUsuario" :key="item.ruta">
-          <NuxtLink :to="item.ruta" 
+        <div v-for="(item, index) in menuUsuario" :key="item.ruta || index">
+          <div v-if="item.esCabecera" class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-6 mb-2 px-3">
+            {{ item.nombre }}
+          </div>
+          <NuxtLink v-else :to="item.ruta" 
             class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group"
             active-class="bg-blue-600 shadow-lg">
             <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
@@ -51,15 +54,16 @@
 
         <div v-else-if="empleado" class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
           <div class="bg-slate-800 p-10 text-white flex items-center gap-8 relative">
-            <div class="relative group cursor-pointer shrink-0" @click="triggerFileInput">
+            <div class="relative group shrink-0">
               <div v-if="empleado.foto" class="w-36 h-36 bg-blue-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg border-4 border-slate-700 group-hover:opacity-80 transition-opacity">
-                <img :src="`http://localhost:3000${empleado.foto}`" alt="Foto de perfil" class="w-full h-full object-cover" />
+                <img :src="`http://localhost:3007${empleado.foto}`" alt="Foto de perfil" class="w-full h-full object-cover" />
               </div>
               <div v-else class="w-36 h-36 bg-blue-500 rounded-full flex items-center justify-center text-6xl font-black shadow-lg border-4 border-slate-700 group-hover:opacity-80 transition-opacity">
                 {{ empleado.nombre.charAt(0) }}{{ empleado.apellido.charAt(0) }}
               </div>
-              <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                <span class="bg-black/60 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-md backdrop-blur-sm">Cambiar Foto</span>
+              <div class="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full gap-2 bg-black/30 backdrop-blur-[1px]">
+                <button v-if="empleado.foto" @click="verFoto" class="bg-blue-600/90 hover:bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition-colors w-24 flex items-center justify-center gap-1"><span>👁️</span> Ver Foto</button>
+                <button @click="triggerFileInput" class="bg-slate-800/90 hover:bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-md transition-colors w-24 flex items-center justify-center gap-1"><span>📷</span> Cambiar</button>
               </div>
               <input type="file" ref="fileInput" class="hidden" accept="image/*" @change="uploadFoto" />
             </div>
@@ -252,7 +256,7 @@
                         <p class="text-sm text-slate-700 italic">{{ contrato.observacion }}</p>
                       </div>
                       <div v-if="contrato.archivo" class="mt-2 flex">
-                        <a :href="`http://localhost:3000${contrato.archivo}`" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-sm">
+                        <a :href="`http://localhost:3007${contrato.archivo}`" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-sm">
                           <span>📎</span> Ver Documento Adjunto
                         </a>
                       </div>
@@ -262,15 +266,27 @@
                 <div v-else-if="activeTab === 'VACACIONES'" class="w-full">
                   <div class="flex justify-between items-center mb-6">
                     <h4 class="text-lg font-black text-slate-800 uppercase tracking-tight">Historial de Vacaciones</h4>
-                    <NuxtLink :to="`/vacaciones?empleadoId=${route.params.id}`" class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-colors shadow-sm">
-                      ➕ Registrar Vacaciones
-                    </NuxtLink>
+                    <div class="flex items-center gap-4">
+                      <div v-if="vacaciones.length > 0" class="flex items-center gap-2">
+                        <label class="text-[10px] font-black text-slate-500 uppercase">Filtrar por Periodo:</label>
+                        <select v-model="filtroPeriodoHistorial" class="p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 min-w-[120px]">
+                          <option value="">Todos</option>
+                          <option v-for="p in periodosHistorialUnicos" :key="p" :value="p">{{ p }}</option>
+                        </select>
+                      </div>
+                      <NuxtLink :to="`/vacaciones?empleadoId=${route.params.id}`" class="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-colors shadow-sm">
+                        ➕ Registrar Vacaciones
+                      </NuxtLink>
+                    </div>
                   </div>
                   <div v-if="vacaciones.length === 0" class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 italic shadow-sm">
                     No hay registros de vacaciones para este empleado.
                   </div>
+                  <div v-else-if="vacacionesHistorialFiltrado.length === 0" class="bg-slate-50 rounded-xl border border-slate-200 p-8 text-center text-slate-400 italic shadow-sm">
+                    No hay registros para el periodo seleccionado.
+                  </div>
                   <div v-else class="space-y-4">
-                    <div v-for="v in vacaciones" :key="v.id" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+                    <div v-for="v in vacacionesHistorialFiltrado" :key="v.id" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
                       <div class="flex justify-between items-start">
                         <div class="flex gap-2 items-center">
                           <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-lg border border-blue-100">Periodo: {{ v.periodo || 'N/A' }}</span>
@@ -287,18 +303,22 @@
                         </div>
                       </div>
                       
-                      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-2">
+                      <div class="grid grid-cols-2 md:grid-cols-7 gap-4 mt-2">
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center shadow-sm">
                           <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Días Disfrutados</p>
-                          <p class="font-black text-blue-600 text-2xl">{{ v.diasVacaciones || 0 }}</p>
+                          <p class="font-black text-blue-600 text-2xl">{{ v.tipoSolicitud === 'Adelantadas' ? 0 : Number(v.diasVacaciones || 0) }}</p>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-xl border border-red-100 text-center shadow-sm">
+                          <p class="text-[10px] font-black text-red-400 uppercase mb-1">Días Adelantados</p>
+                          <p class="font-black text-red-600 text-2xl">{{ v.tipoSolicitud === 'Adelantadas' ? Number(v.diasVacaciones || 0) : 0 }}</p>
                         </div>
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center shadow-sm">
                           <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Días Pagados</p>
-                          <p class="font-black text-emerald-500 text-2xl">{{ v.diasPagados || 0 }}</p>
+                          <p class="font-black text-emerald-500 text-2xl">{{ Number(v.diasPagados || 0) }}</p>
                         </div>
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center shadow-sm">
                           <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Días Pendientes</p>
-                          <p class="font-black text-orange-500 text-2xl">{{ v.diasPendientes || 0 }}</p>
+                          <p class="font-black text-orange-500 text-2xl">{{ Number(v.diasPendientes || 0) }}</p>
                         </div>
                         <div class="p-3 flex flex-col justify-center items-center md:items-start">
                           <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Fecha Inicio</p>
@@ -307,6 +327,10 @@
                         <div class="p-3 flex flex-col justify-center items-center md:items-start">
                           <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Fecha Final</p>
                           <p class="font-bold text-slate-800 text-sm">{{ v.fechaFinal ? new Date(v.fechaFinal).toLocaleDateString('es-HN') : 'N/A' }}</p>
+                        </div>
+                        <div class="p-3 flex flex-col justify-center items-center md:items-start">
+                          <p class="text-[10px] font-black text-slate-400 uppercase mb-1">Fecha Regreso</p>
+                          <p class="font-bold text-slate-800 text-sm">{{ v.fechaRegreso ? new Date(v.fechaRegreso).toLocaleDateString('es-HN') : 'N/A' }}</p>
                         </div>
                       </div>
 
@@ -338,6 +362,9 @@
                             <p><span class="text-slate-400">Creado por:</span> <span class="text-slate-700">{{ falta.creadoPorNombre || 'Admin' }}</span> <span class="mx-2 text-slate-300">|</span> <span class="text-slate-400">Fecha:</span> <span class="text-slate-700">{{ falta.fecha ? new Date(falta.fecha).toLocaleDateString('es-HN', { timeZone: 'UTC' }) : 'N/A' }}</span></p>
                             <p class="mt-1" v-if="(falta.fechaModificacion || falta.fecha_modificacion) && (falta.fechaModificacion || falta.fecha_modificacion) !== (falta.fechaCreacion || falta.fecha_creacion)"><span class="text-slate-400">Modificado:</span> <span class="text-slate-700">{{ falta.modificadoPorNombre || falta.creadoPorNombre || 's/d' }}</span> <span class="mx-2 text-slate-300">|</span> <span class="text-slate-400">Fecha:</span> <span class="text-slate-700">{{ falta.fechaModificacion ? new Date(falta.fechaModificacion).toLocaleDateString('es-HN') : new Date(falta.fecha_modificacion).toLocaleDateString('es-HN') }}</span></p>
                           </div>
+                          <a v-if="falta.documento" :href="`http://localhost:3007${falta.documento}`" target="_blank" class="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-100 hover:border-emerald-600 shadow-sm flex items-center gap-1" title="Ver Documento">
+                            <span>📄</span>
+                          </a>
                           <button @click="editarFalta(falta)" class="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-100 hover:border-blue-600 shadow-sm flex items-center gap-1" title="Editar Falta">
                             <span>✏️</span>
                           </button>
@@ -379,6 +406,9 @@
                             <p class="mt-1" v-if="nota.fechaModificacion && nota.fechaModificacion !== nota.fechaCreacion"><span class="text-slate-400">Modificado por:</span> <span class="text-slate-700">{{ nota.modificadoPorNombre || 'Admin' }}</span> <span class="mx-2 text-slate-300">|</span> <span class="text-slate-400">Fecha:</span> <span class="text-slate-700">{{ new Date(nota.fechaModificacion).toLocaleDateString('es-HN') }}</span></p>
                           </div>
                           <div class="flex items-center gap-2">
+                            <a v-if="nota.documento" :href="`http://localhost:3007${nota.documento}`" target="_blank" class="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl transition-all border border-emerald-100 hover:border-emerald-600 shadow-sm flex items-center gap-1" title="Ver Documento">
+                              <span>📄</span>
+                            </a>
                             <button @click="editarNota(nota)" class="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-100 hover:border-blue-600 shadow-sm flex items-center gap-1" title="Editar Nota">
                               <span>✏️</span>
                             </button>
@@ -433,7 +463,7 @@
                       </div>
                       
                       <div class="mt-2" v-if="doc.archivo_url">
-                        <a :href="`http://localhost:3000${doc.archivo_url}`" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-colors shadow-sm">
+                        <a :href="`http://localhost:3007${doc.archivo_url}`" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-700 transition-colors shadow-sm">
                           <span>⬇️</span> Ver / Descargar
                         </a>
                       </div>
@@ -536,6 +566,10 @@
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Sanción (Opcional)</label>
               <input v-model="formFalta.sancion" type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all placeholder-slate-300" placeholder="Ej. Llamado de atención, Deducción salarial...">
             </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Documento Registrar Falta (Opcional)</label>
+              <input type="file" ref="fileDocumentoFalta" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all" accept=".pdf,.png,.jpg,.jpeg">
+            </div>
           </div>
           <div class="pt-6 border-t border-slate-100 flex justify-end gap-3">
             <button type="button" @click="cerrarModalFalta" class="px-6 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-200 transition-colors">
@@ -568,7 +602,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Parentesco</label>
-                <input v-model="formContacto.emergencia_parentesco" type="text" placeholder="Ej: Madre, Padre" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all text-sm">
+                <select v-model="formContacto.emergencia_parentesco" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all text-sm">
+                  <option value="" disabled>Seleccione...</option>
+                  <option value="Padre">Padre</option>
+                  <option value="Madre">Madre</option>
+                  <option value="Conyuge">Conyuge</option>
+                  <option value="Hermano(a)">Hermano(a)</option>
+                  <option value="Tio(a)">Tio(a)</option>
+                  <option value="Otro(a)">Otro(a)</option>
+                </select>
               </div>
               <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Nombre Completo</label>
@@ -586,7 +628,15 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Parentesco</label>
-                <input v-model="formContacto.emergencia_parentesco_2" type="text" placeholder="Ej: Madre, Padre" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all text-sm">
+                <select v-model="formContacto.emergencia_parentesco_2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all text-sm">
+                  <option value="" disabled>Seleccione...</option>
+                  <option value="Padre">Padre</option>
+                  <option value="Madre">Madre</option>
+                  <option value="Conyuge">Conyuge</option>
+                  <option value="Hermano(a)">Hermano(a)</option>
+                  <option value="Tio(a)">Tio(a)</option>
+                  <option value="Otro(a)">Otro(a)</option>
+                </select>
               </div>
               <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Nombre Completo</label>
@@ -632,6 +682,10 @@
             <div>
               <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Descripción</label>
               <textarea v-model="formNota.descripcion" required rows="5" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all placeholder-slate-300" placeholder="Detalle de la nota..."></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Documento de Nota (Opcional)</label>
+              <input type="file" ref="fileDocumentoNota" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-blue-500 transition-all" accept=".pdf,.png,.jpg,.jpeg">
             </div>
           </div>
           <div class="pt-6 border-t border-slate-100 flex justify-end gap-3">
@@ -688,6 +742,16 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal Ver Foto -->
+    <div v-if="mostrarModalFoto" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4" @click="cerrarModalFoto">
+      <div class="relative max-w-4xl max-h-screen flex items-center justify-center" @click.stop>
+        <button @click="cerrarModalFoto" class="absolute -top-12 right-0 text-white hover:text-red-400 text-3xl font-bold transition-colors">
+          ❌
+        </button>
+        <img :src="`http://localhost:3007${empleado.foto}`" alt="Foto de perfil en grande" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain border-4 border-white/20" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -704,6 +768,18 @@ const error = ref('')
 const fileInput = ref(null)
 const activeTab = ref('CONTRATOS')
 
+const mostrarModalFoto = ref(false)
+
+const verFoto = () => {
+  if (empleado.value && empleado.value.foto) {
+    mostrarModalFoto.value = true
+  }
+}
+
+const cerrarModalFoto = () => {
+  mostrarModalFoto.value = false
+}
+
 const rolID = ref(null)
 const rolNombre = ref('Cargando...')
 const menuUsuario = ref([])
@@ -712,6 +788,20 @@ const mostrarOpciones = ref(false)
 
 const contratos = ref([])
 const vacaciones = ref([])
+
+const filtroPeriodoHistorial = ref('');
+
+const periodosHistorialUnicos = computed(() => {
+  if (!vacaciones.value) return [];
+  const periodos = new Set(vacaciones.value.map(v => v.periodo).filter(Boolean));
+  return Array.from(periodos).sort((a, b) => b.localeCompare(a));
+});
+
+const vacacionesHistorialFiltrado = computed(() => {
+  if (!filtroPeriodoHistorial.value) return vacaciones.value;
+  return vacaciones.value.filter(v => v.periodo === filtroPeriodoHistorial.value);
+});
+
 const faltas = ref([])
 const documentos = ref([])
 const notas = ref([])
@@ -800,7 +890,7 @@ const guardarContacto = async () => {
     if (payload.fecha_nacimiento) payload.fecha_nacimiento = payload.fecha_nacimiento.split('T')[0]
     if (payload.fecha_inicio) payload.fecha_inicio = payload.fecha_inicio.split('T')[0]
 
-    await axios.put(`http://localhost:3000/api/empleados/${route.params.id}`, payload)
+    await axios.put(`http://localhost:3007/api/empleados/${route.params.id}`, payload)
     
     // Actualizar el estado local
     empleado.value = { ...empleado.value, ...formContacto.value }
@@ -819,7 +909,7 @@ const archivoContratoInput = ref(null)
 
 const cargarContratos = async () => {
   try {
-    const res = await axios.get(`http://localhost:3000/api/empleados/${route.params.id}/contratos`)
+    const res = await axios.get(`http://localhost:3007/api/empleados/${route.params.id}/contratos`)
     contratos.value = res.data
   } catch (err) {
     console.error("Error al cargar contratos:", err)
@@ -828,8 +918,49 @@ const cargarContratos = async () => {
 
 const cargarVacaciones = async () => {
   try {
-    const res = await axios.get(`http://localhost:3000/api/vacaciones/empleado/${route.params.id}`)
-    vacaciones.value = res.data
+    const res = await axios.get(`http://localhost:3007/api/vacaciones/empleado/${route.params.id}`)
+    const records = res.data;
+    
+    let empFechaInicio = empleado.value?.fecha_inicio;
+    
+    // Recalcular días pendientes dinámicamente para el historial basado en los registros actuales
+    const periodos = {};
+    const reversedRecords = [...records].sort((a, b) => a.id - b.id);
+    
+    reversedRecords.forEach(v => {
+        if (periodos[v.periodo] === undefined) {
+            let base = 0;
+            if (empFechaInicio && v.periodo && v.periodo.includes('-')) {
+                const inicioStr = empFechaInicio.includes('T') ? empFechaInicio.split('T')[0] : empFechaInicio;
+                const anioInicioEmp = new Date(inicioStr + 'T00:00:00').getFullYear();
+                const anioPeriodo = parseInt(v.periodo.split('-')[0]);
+                const anios = anioPeriodo - anioInicioEmp + 1;
+                if (anios >= 4) base = 20;
+                else if (anios === 3) base = 15;
+                else if (anios === 2) base = 12;
+                else if (anios === 1) base = 10;
+            }
+            if (base === 0 || v.tipoSolicitud === 'Permiso Especial') {
+                base = Number(v.diasCorrespondientes) || 0;
+            }
+            periodos[v.periodo] = base;
+            v.diasCorrespondientes = base;
+        } else {
+            v.diasCorrespondientes = periodos[v.periodo];
+        }
+        
+        let aRestar = 0;
+        if (v.tipoSolicitud === 'Pagadas') {
+            aRestar = (Number(v.diasVacaciones) || 0) + (Number(v.diasPagados) || 0);
+        } else if (v.tipoSolicitud !== 'Permiso Especial') {
+            aRestar = (Number(v.diasVacaciones) || 0);
+        }
+        
+        v.diasPendientes = v.diasCorrespondientes - aRestar;
+        periodos[v.periodo] = v.diasPendientes;
+    });
+    
+    vacaciones.value = records;
   } catch (err) {
     console.error("Error al cargar vacaciones:", err)
   }
@@ -838,7 +969,7 @@ const cargarVacaciones = async () => {
 const eliminarVacacion = async (id) => {
   if (confirm('¿Está seguro de que desea eliminar este registro de vacaciones?')) {
     try {
-      await axios.delete(`http://localhost:3000/api/vacaciones/${id}`)
+      await axios.delete(`http://localhost:3007/api/vacaciones/${id}`)
       alert('✅ Registro de vacaciones eliminado correctamente')
       await cargarVacaciones()
     } catch (err) {
@@ -901,13 +1032,13 @@ const guardarContrato = async () => {
 
     if (isEditingContrato.value) {
       formData.append('modificadoPor', localStorage.getItem('usuarioID') || 1)
-      await axios.put(`http://localhost:3000/api/empleados/${route.params.id}/contratos/${formContrato.value.id}`, formData, {
+      await axios.put(`http://localhost:3007/api/empleados/${route.params.id}/contratos/${formContrato.value.id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       alert('✅ Contrato actualizado correctamente')
     } else {
       formData.append('creadoPor', localStorage.getItem('usuarioID') || 1)
-      await axios.post(`http://localhost:3000/api/empleados/${route.params.id}/contratos`, formData, {
+      await axios.post(`http://localhost:3007/api/empleados/${route.params.id}/contratos`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       alert('✅ Contrato registrado correctamente')
@@ -925,12 +1056,14 @@ const guardarContrato = async () => {
 
 const cargarNotas = async () => {
   try {
-    const res = await axios.get(`http://localhost:3000/api/notas/empleado/${route.params.id}`)
+    const res = await axios.get(`http://localhost:3007/api/notas/empleado/${route.params.id}`)
     notas.value = res.data
   } catch (err) {
     console.error("Error al cargar notas:", err)
   }
 }
+
+const fileDocumentoNota = ref(null)
 
 const abrirModalNota = () => {
   isEditingNota.value = false
@@ -939,6 +1072,7 @@ const abrirModalNota = () => {
     asunto: '',
     descripcion: ''
   }
+  if (fileDocumentoNota.value) fileDocumentoNota.value.value = ''
   mostrarModalNota.value = true
   mostrarOpciones.value = false
 }
@@ -950,6 +1084,7 @@ const editarNota = (nota) => {
     asunto: nota.asunto || '',
     descripcion: nota.descripcion || ''
   }
+  if (fileDocumentoNota.value) fileDocumentoNota.value.value = ''
   mostrarModalNota.value = true
 }
 
@@ -961,19 +1096,26 @@ const guardarNota = async () => {
   try {
     guardandoNota.value = true
     
-    const payload = {
-      empleado_id: route.params.id,
-      asunto: formNota.value.asunto,
-      descripcion: formNota.value.descripcion,
-      creadoPor: localStorage.getItem('usuarioID') || 1,
-      modificadoPor: localStorage.getItem('usuarioID') || 1
+    const formData = new FormData()
+    formData.append('empleado_id', route.params.id)
+    formData.append('asunto', formNota.value.asunto)
+    formData.append('descripcion', formNota.value.descripcion)
+
+    if (fileDocumentoNota.value && fileDocumentoNota.value.files[0]) {
+      formData.append('documento', fileDocumentoNota.value.files[0])
     }
 
     if (isEditingNota.value) {
-      await axios.put(`http://localhost:3000/api/notas/${formNota.value.id}`, payload)
+      formData.append('modificadoPor', localStorage.getItem('usuarioID') || 1)
+      await axios.put(`http://localhost:3007/api/notas/${formNota.value.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       alert('✅ Nota actualizada correctamente')
     } else {
-      await axios.post(`http://localhost:3000/api/notas/registrar`, payload)
+      formData.append('creadoPor', localStorage.getItem('usuarioID') || 1)
+      await axios.post(`http://localhost:3007/api/notas/registrar`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       alert('✅ Nota registrada correctamente')
     }
     
@@ -990,7 +1132,7 @@ const guardarNota = async () => {
 const eliminarNota = async (id) => {
   if (confirm('¿Está seguro de que desea eliminar esta nota?')) {
     try {
-      await axios.delete(`http://localhost:3000/api/notas/${id}`)
+      await axios.delete(`http://localhost:3007/api/notas/${id}`)
       alert('✅ Nota eliminada correctamente')
       await cargarNotas()
     } catch (err) {
@@ -1002,12 +1144,14 @@ const eliminarNota = async (id) => {
 
 const cargarFaltas = async () => {
   try {
-    const res = await axios.get(`http://localhost:3000/api/faltas/empleado/${route.params.id}`)
+    const res = await axios.get(`http://localhost:3007/api/faltas/empleado/${route.params.id}`)
     faltas.value = res.data
   } catch (err) {
     console.error("Error al cargar faltas:", err)
   }
 }
+
+const fileDocumentoFalta = ref(null)
 
 const abrirModalFalta = () => {
   isEditingFalta.value = false
@@ -1017,6 +1161,7 @@ const abrirModalFalta = () => {
     motivo: '',
     sancion: ''
   }
+  if (fileDocumentoFalta.value) fileDocumentoFalta.value.value = ''
   mostrarModalFalta.value = true
   mostrarOpciones.value = false
 }
@@ -1029,6 +1174,7 @@ const editarFalta = (falta) => {
     motivo: falta.motivo || '',
     sancion: falta.sancion || ''
   }
+  if (fileDocumentoFalta.value) fileDocumentoFalta.value.value = ''
   mostrarModalFalta.value = true
 }
 
@@ -1040,20 +1186,27 @@ const guardarFalta = async () => {
   try {
     guardandoFalta.value = true
     
-    const payload = {
-      empleado_id: route.params.id,
-      fecha: formFalta.value.fecha,
-      motivo: formFalta.value.motivo,
-      sancion: formFalta.value.sancion,
-      creadoPor: localStorage.getItem('usuarioID') || 1,
-      modificadoPor: localStorage.getItem('usuarioID') || 1
+    const formData = new FormData()
+    formData.append('empleado_id', route.params.id)
+    formData.append('fecha', formFalta.value.fecha)
+    formData.append('motivo', formFalta.value.motivo)
+    formData.append('sancion', formFalta.value.sancion || '')
+
+    if (fileDocumentoFalta.value && fileDocumentoFalta.value.files[0]) {
+      formData.append('documento', fileDocumentoFalta.value.files[0])
     }
 
     if (isEditingFalta.value) {
-      await axios.put(`http://localhost:3000/api/faltas/${formFalta.value.id}`, payload)
+      formData.append('modificadoPor', localStorage.getItem('usuarioID') || 1)
+      await axios.put(`http://localhost:3007/api/faltas/${formFalta.value.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       alert('✅ Falta actualizada correctamente')
     } else {
-      await axios.post(`http://localhost:3000/api/faltas/registrar`, payload)
+      formData.append('creadoPor', localStorage.getItem('usuarioID') || 1)
+      await axios.post(`http://localhost:3007/api/faltas/registrar`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
       alert('✅ Falta registrada correctamente')
     }
     
@@ -1073,7 +1226,7 @@ const toggleOpciones = () => {
 
 const cargarDocumentos = async () => {
   try {
-    const res = await axios.get(`http://localhost:3000/api/documentos/empleado/${route.params.id}`)
+    const res = await axios.get(`http://localhost:3007/api/documentos/empleado/${route.params.id}`)
     documentos.value = res.data
   } catch (err) {
     console.error("Error al cargar documentos:", err)
@@ -1123,7 +1276,7 @@ const guardarDocumento = async () => {
     formData.append('creadoPor', localStorage.getItem('usuarioID') || 1)
     formData.append('modificadoPor', localStorage.getItem('usuarioID') || 1)
 
-    await axios.post(`http://localhost:3000/api/documentos/registrar`, formData, {
+    await axios.post(`http://localhost:3007/api/documentos/registrar`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     
@@ -1141,7 +1294,7 @@ const guardarDocumento = async () => {
 const eliminarDocumento = async (id) => {
   if (confirm('¿Está seguro de que desea eliminar este documento?')) {
     try {
-      await axios.delete(`http://localhost:3000/api/documentos/${id}`)
+      await axios.delete(`http://localhost:3007/api/documentos/${id}`)
       alert('✅ Documento eliminado correctamente')
       await cargarDocumentos()
     } catch (err) {
@@ -1168,7 +1321,7 @@ const toggleEstadoEmpleado = async () => {
 
   if (confirm(mensajeConfirmacion)) {
     try {
-      await axios.put(`http://localhost:3000/api/empleados/${route.params.id}/${accion}`)
+      await axios.put(`http://localhost:3007/api/empleados/${route.params.id}/${accion}`)
       alert(`✅ Empleado ${isActivo ? 'desactivado' : 'activado'} correctamente`)
       // Actualizar el estado local para reflejar el cambio inmediatamente
       empleado.value.estado = isActivo ? 0 : 1;
@@ -1197,7 +1350,7 @@ const uploadFoto = async (event) => {
 
   try {
     const id = route.params.id
-    const res = await axios.post(`http://localhost:3000/api/empleados/${id}/foto`, formData, {
+    const res = await axios.post(`http://localhost:3007/api/empleados/${id}/foto`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -1223,7 +1376,7 @@ onMounted(async () => {
   }
 
   try {
-    const m = await axios.get(`http://localhost:3000/api/menu/${rolID.value}`)
+    const m = await axios.get(`http://localhost:3007/api/menu/${rolID.value}`)
     menuUsuario.value = m.data
   } catch (e) {
     console.error('Error cargando menú', e)
@@ -1231,7 +1384,7 @@ onMounted(async () => {
 
   try {
     const id = route.params.id
-    const res = await axios.get(`http://localhost:3000/api/empleados/${id}`)
+    const res = await axios.get(`http://localhost:3007/api/empleados/${id}`)
     empleado.value = res.data
     
     // Cargar contratos y vacaciones del empleado

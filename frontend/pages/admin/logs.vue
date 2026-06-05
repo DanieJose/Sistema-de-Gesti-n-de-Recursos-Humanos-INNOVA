@@ -6,8 +6,11 @@
       </div>
       
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-        <div v-for="item in menuUsuario" :key="item.ruta">
-          <NuxtLink :to="item.ruta" 
+        <div v-for="(item, index) in menuUsuario" :key="item.ruta || index">
+          <div v-if="item.esCabecera" class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-6 mb-2 px-3">
+            {{ item.nombre }}
+          </div>
+          <NuxtLink v-else :to="item.ruta" 
             class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700 transition-all duration-200 group"
             active-class="bg-blue-600 shadow-lg">
             <span class="text-xl group-hover:scale-110 transition-transform">{{ item.icono }}</span>
@@ -33,6 +36,17 @@
           <div>
             <h1 class="text-3xl font-black text-slate-800 tracking-tight uppercase">Logs de Sistema</h1>
             <p class="text-slate-500 mt-1 font-medium italic">Registro de auditoría y actividades de los usuarios.</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 bg-slate-50 py-2 px-4 rounded-2xl border border-slate-100">
+              <div class="text-right">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Usuario Activo</p>
+                <p class="font-bold text-slate-800">{{ usuarioActual || 'Gerad Cole' }}</p>
+              </div>
+              <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                {{ usuarioActual ? usuarioActual.charAt(0).toUpperCase() : 'G' }}
+              </div>
+            </div>
           </div>
         </div>
         <div class="w-full">
@@ -99,6 +113,7 @@
         </div>
       </div>
     </main>
+
   </div>
 </template>
 
@@ -111,6 +126,7 @@ const router = useRouter()
 const rolID = ref(null)
 const rolNombre = ref('Cargando...')
 const menuUsuario = ref([])
+const usuarioActual = ref('')
 
 const logs = ref([])
 const loading = ref(true)
@@ -144,7 +160,7 @@ const getAccionClass = (accion) => {
 const cargarLogs = async () => {
   try {
     loading.value = true
-    const res = await axios.get('http://localhost:3000/api/logs')
+    const res = await axios.get('http://localhost:3007/api/logs')
     logs.value = res.data
   } catch (error) {
     console.error('Error cargando logs:', error)
@@ -160,6 +176,7 @@ const logout = () => {
 
 onMounted(async () => {
   rolID.value = localStorage.getItem('usuarioRol') || 2
+  usuarioActual.value = localStorage.getItem('usuarioNombre') || 'Gerad Cole'
 
   // Solo Super Admin puede ver esto, pero por si acaso validamos
   if (rolID.value != 1) {
@@ -170,7 +187,7 @@ onMounted(async () => {
   rolNombre.value = 'Administrador IT'
 
   try {
-    const m = await axios.get(`http://localhost:3000/api/menu/${rolID.value}`)
+    const m = await axios.get(`http://localhost:3007/api/menu/${rolID.value}`)
     menuUsuario.value = m.data
   } catch (e) {
     console.error('Error cargando menú', e)
