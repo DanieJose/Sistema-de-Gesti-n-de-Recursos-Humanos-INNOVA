@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
   final Dio dio;
+  
 
   ApiClient()
       : dio = Dio(BaseOptions(
@@ -35,3 +36,4 @@ class ApiClient {
 
 // Instancia global para usar en los providers
 final apiClient = ApiClient().dio;
+

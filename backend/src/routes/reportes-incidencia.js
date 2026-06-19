@@ -37,6 +37,8 @@ router.post('/crear', upload.single('archivo'), (req, res) => {
                     console.error("❌ ERROR DETALLADO:", err);
                     return res.status(500).json({ error: "Error al crear el reporte", detalle: err.message });
                 }
+                const io = req.app.get('io');
+                io.emit('reportes_actualizados');
                 res.json({ mensaje: "Reporte enviado con éxito", reporteId: result.insertId });
             });
         });
@@ -47,6 +49,8 @@ router.post('/crear', upload.single('archivo'), (req, res) => {
                 console.error("❌ ERROR DETALLADO:", err);
                 return res.status(500).json({ error: "Error al crear el reporte", detalle: err.message });
             }
+            const io = req.app.get('io');
+            io.emit('reportes_actualizados');
             res.json({ mensaje: "Reporte enviado con éxito", reporteId: result.insertId });
         });
     }
@@ -107,6 +111,8 @@ router.put('/:id/asignar', (req, res) => {
     const { usuario_id } = req.body;
     db.query('UPDATE reportes_incidencias SET asignado_usuario_id = ?, estado = "En Proceso" WHERE id = ?', [usuario_id, reporteId], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        const io = req.app.get('io');
+        io.emit('reportes_actualizados');
         res.json({ mensaje: 'Reporte asignado con éxito' });
     });
 });
@@ -118,6 +124,8 @@ router.put('/:id/estado', (req, res) => {
     const { estado } = req.body;
     db.query('UPDATE reportes_incidencias SET estado = ? WHERE id = ?', [estado, reporteId], (err) => {
         if (err) return res.status(500).json({ error: err.message });
+        const io = req.app.get('io');
+        io.emit('reportes_actualizados');
         res.json({ mensaje: 'Estado actualizado' });
     });
 });
@@ -152,6 +160,8 @@ router.post('/:id/respuestas', upload.single('archivo'), (req, res) => {
     const query = 'INSERT INTO reporte_incidencia_respuestas (reporte_id, usuario_id, empleado_id, mensaje, archivo) VALUES (?, ?, ?, ?, ?)';
     db.execute(query, [reporteId, usuario_id || null, empleado_id || null, mensaje, archivo], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
+        const io = req.app.get('io');
+        io.emit('reportes_actualizados');
         res.json({ mensaje: 'Respuesta enviada', respuestaId: result.insertId, archivo: archivo });
     });
 });
@@ -180,6 +190,8 @@ router.post('/categorias', (req, res) => {
             }
             return res.status(500).json({ error: err.message });
         }
+        const io = req.app.get('io');
+        io.emit('reportes_actualizados');
         res.json({ id: result.insertId, nombre: nombre.trim() });
     });
 });
@@ -201,6 +213,8 @@ router.put('/categorias/:id', (req, res) => {
             }
             return res.status(500).json({ error: err.message });
         }
+        const io = req.app.get('io');
+        io.emit('reportes_actualizados');
         res.json({ mensaje: 'Categoría actualizada con éxito' });
     });
 });

@@ -20,7 +20,7 @@ import 'features/empleados/screens/nuevo_empleado_screen.dart';
 import 'features/empleados/screens/nuevo_contrato_screen.dart';
 import 'features/vacaciones/screens/vacaciones_screen.dart';
 import 'features/reportes/screens/reportes_screen.dart';
-import 'features/departamentos/screens/departamentos_screen.dart';
+import 'features/departamentos/departamentos_screen.dart';
 import 'features/reportes_incidencias/screens/reportes_incidencias_screen.dart';
 import 'features/manuales/screens/manuales_screen.dart';
 import 'features/documentos/screens/documentos_screen.dart';
@@ -58,16 +58,30 @@ class InnovaApp extends ConsumerWidget {
         ),
         ShellRoute(
           builder: (context, state, child) {
-            // Un Scaffold maestro que provee el Drawer y el AppBar común
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('INNOVA SISTEMA RRHH ', style: TextStyle(fontWeight: FontWeight.bold)),
-                backgroundColor: Colors.blue.shade900,
-                foregroundColor: Colors.white,
-              ),
-              drawer: const AppDrawer(),
-              body: child,
-            );
+            // Para acceder al estado de autenticación y mostrar el usuario, usamos un Consumer.
+            return Consumer(builder: (context, ref, _) {
+              final authState = ref.watch(authProvider);
+              // Asumimos que authState.user contiene la información del usuario logueado
+              // y que el objeto de usuario tiene una propiedad 'nombre'.
+              final user = authState.user;
+
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('INNOVA SISTEMA RRHH', style: TextStyle(fontWeight: FontWeight.bold)),
+                  backgroundColor: Colors.blue.shade900,
+                  foregroundColor: Colors.white,
+                  actions: [
+                    if (user != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Center(child: Text(user.nombre, style: const TextStyle(fontSize: 16))),
+                      ),
+                  ],
+                ),
+                drawer: const AppDrawer(),
+                body: child,
+              );
+            });
           },
           routes: [
             GoRoute(

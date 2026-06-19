@@ -4,6 +4,7 @@ const mysql = require('mysql2');
 const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // Configuración de Multer para fotos de usuario
 const storage = multer.diskStorage({
@@ -62,8 +63,16 @@ router.post('/login', (req, res) => {
                 // Actualizar ultimoLogin
                 db.query('UPDATE usuarios SET ultimoLogin = NOW() WHERE id = ?', [user.id]);
 
+                // Generar token JWT
+                const token = jwt.sign(
+                    { id: user.id, rol: user.rol_id },
+                    process.env.JWT_SECRET || 'clave_secreta_por_defecto',
+                    { expiresIn: '8h' }
+                );
+
                 res.json({ 
                     mensaje: "Bienvenido", 
+                    token: token,
                     usuario: {
                         id: user.id,
                         nombre: user.nombre || 'Usuario Sistema',

@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require("socket.io");
 const mysql = require('mysql2');
 const cors = require('cors');
 const path = require('path');
@@ -22,6 +24,23 @@ const categoriasLegalesRoutes = require('./routes/categorias-legales');
 const reportesIncidenciaRoutes = require('./routes/reportes-incidencia');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:3001", "http://localhost:3000"], // Allow frontend origins
+    methods: ["GET", "POST"]
+  }
+});
+
+// Make io accessible to our router
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('✅ Cliente conectado a Socket.IO');
+  socket.on('disconnect', () => {
+    console.log('❌ Cliente desconectado');
+  });
+});
 
 // --- CONFIGURACIÓN DE MIDDLEWARES ---
 app.use(express.json()); 
@@ -492,6 +511,7 @@ app.put('/api/notificaciones/leer/:usuario_id', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3007;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Servidor RRHH Innova en: http://localhost:${PORT}`);
+    console.log(`🔌 Socket.IO escuchando en el mismo puerto.`);
 });

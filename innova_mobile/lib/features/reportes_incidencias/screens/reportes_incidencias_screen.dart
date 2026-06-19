@@ -1,24 +1,38 @@
-// CREADO POR: DANIEL INNOVA
-
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/socket_service.dart';
 
-class ReportesIncidenciasScreen extends StatefulWidget {
+class ReportesIncidenciasScreen extends ConsumerStatefulWidget {
   const ReportesIncidenciasScreen({super.key});
 
   @override
-  State<ReportesIncidenciasScreen> createState() => _ReportesIncidenciasScreenState();
+  ConsumerState<ReportesIncidenciasScreen> createState() => _ReportesIncidenciasScreenState();
 }
 
-class _ReportesIncidenciasScreenState extends State<ReportesIncidenciasScreen> {
+class _ReportesIncidenciasScreenState extends ConsumerState<ReportesIncidenciasScreen> {
   bool isLoading = true;
   List<dynamic> reportes = [];
+  late final _socketService = SocketService();
 
   @override
   void initState() {
     super.initState();
     _cargarReportes();
+
+    // Escuchar eventos de socket para actualizaciones en tiempo real
+    _socketService.socket.on('reportes_actualizados', (_) {
+      print('Socket: reportes_actualizados recibido, actualizando...');
+      _cargarReportes();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Limpiar el listener del socket
+    _socketService.socket.off('reportes_actualizados');
+    super.dispose();
   }
 
   Future<void> _cargarReportes() async {

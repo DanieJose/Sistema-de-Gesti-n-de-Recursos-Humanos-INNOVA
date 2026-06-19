@@ -1,0 +1,68 @@
+import 'package:flutter/material.dart';
+import '../models/departamento_model.dart';
+import '../repositories/departamento_repository.dart';
+import '../../../../core/utils/logger_util.dart'; // Corrected Import the logger
+
+class DepartamentoProvider with ChangeNotifier {
+  final DepartamentoRepository _repository = DepartamentoRepository();
+  List<Departamento> departamentos = [];
+  bool isLoading = false;
+
+  Future<void> fetchDepartamentos() async {
+    isLoading = true;
+    notifyListeners();
+    try {
+      departamentos = await _repository.getDepartamentos();
+    } catch (e) {
+      logger.e("Error fetching departamentos: $e");
+    }
+    isLoading = false;
+    notifyListeners();
+  }
+
+  Future<bool> addDepartamento(Departamento departamento) async {
+    try {
+      await _repository.createDepartamento(departamento);
+      await fetchDepartamentos(); // Refetch to get correct data
+      return true;
+    } catch (e) {
+      logger.e("Error creating departamento: $e");
+      return false;
+    }
+  }
+
+  Future<bool> updateDepartamento(Departamento departamento) async {
+    try {
+      await _repository.updateDepartamento(departamento);
+      await fetchDepartamentos();
+      return true;
+    }
+    catch (e) {
+      logger.e("Error updating departamento: $e");
+      return false;
+    }
+  }
+
+  Future<bool> toggleEstado(int id, int estadoActual, String modificadoPor) async {
+    try {
+      int nuevoEstado = estadoActual == 1 ? 0 : 1;
+      await _repository.updateEstado(id, nuevoEstado, modificadoPor);
+      await fetchDepartamentos();
+      return true;
+    } catch (e) {
+      logger.e("Error toggling estado: $e");
+      return false;
+    }
+  }
+
+  Future<bool> deleteDepartamento(int id) async {
+    try {
+      await _repository.deleteDepartamento(id);
+      await fetchDepartamentos();
+      return true;
+    } catch (e) {
+      logger.e("Error deleting departamento: $e");
+      return false;
+    }
+  }
+}

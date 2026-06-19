@@ -137,7 +137,7 @@ class DashboardScreen extends ConsumerWidget {
             Text(icon, style: const TextStyle(fontSize: 24)),
             const Spacer(),
             Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
-            Text(title, style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.8))),
+            Text(title, style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.8))),
           ],
         ),
       ),
